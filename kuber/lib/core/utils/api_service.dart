@@ -1,45 +1,42 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:file_picker/file_picker.dart';
 
 class ApiService {
- 
-  static const String analyzeUrl = 'https://fantastic-exhaust-neutron.ngrok-free.dev/analyze';
 
-  static Future<Map<String, dynamic>?> uploadStatement(PlatformFile file) async {
-    try {
-      var request = http.MultipartRequest('POST', Uri.parse(analyzeUrl));
-      
-      
-      if (file.bytes != null) {
-       
-        request.files.add(http.MultipartFile.fromBytes(
-          'file', 
-          file.bytes!,
-          filename: file.name,
-        ));
-      } else if (file.path != null) {
-        
-        request.files.add(await http.MultipartFile.fromPath(
-          'file', 
-          file.path!,
-        ));
-      }
+static const String baseUrl = 'https://fantastic-exhaust-neutron.ngrok-free.dev'; 
 
-      
+static Future<Map<String, dynamic>?> analyzeStatementWithAI(File csvFile) async {
+  try {
+    var uri = Uri.parse('$baseUrl/analyze'); 
+    
+    // ... rest of your code ...
+
+      var request = http.MultipartRequest('POST', uri);
+      request.headers.addAll({
+        'ngrok-skip-browser-warning': 'true',
+        'Accept': 'application/json',
+      });
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file', 
+          csvFile.path,
+        ),
+      );
+
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
-        
         return jsonDecode(response.body);
       } else {
-        print('Backend Error: \${response.statusCode} - \${response.body}');
-        return null;
+        print('Backend Error: ${response.statusCode} - ${response.body}');
+        throw Exception('Backend returned error: ${response.statusCode}');
       }
     } catch (e) {
-      print('Upload Exception: $e');
-      return null;
+      print('Network Exception: $e');
+      throw Exception('Failed to connect to AI backend: $e');
     }
   }
 }
