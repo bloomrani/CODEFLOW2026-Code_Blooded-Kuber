@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'upload/upload_screen.dart'; 
+import 'auth/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -28,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     // Waits 3.5 seconds total, then routes to the Upload Screen
     Timer(const Duration(milliseconds: 3500), () {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const UploadScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     });
   }

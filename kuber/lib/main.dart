@@ -1,33 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'providers/theme_provider.dart';
-// 👇 Import your new splash screen 👇
-import 'features/splash_screen.dart'; 
 
-void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
-      child: const KuberApp(),
-    ),
-  );
+// 👇 CRITICAL: Make sure this path exactly matches where the file you just opened is!
+// If it's inside a 'theme' folder, it should be: import 'theme/theme_provider.dart';
+import 'providers/theme_provider.dart'; 
+
+import 'features/splash_screen.dart'; // Adjust this path if needed
+
+void main() async {
+  // 1. Lock the framework
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 2. Turn on Firebase
+  await Firebase.initializeApp(); 
+
+  // 3. Run the app
+  runApp(const MyApp());
 }
 
-class KuberApp extends StatelessWidget {
-  const KuberApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Kuber AI',
-      debugShowCheckedModeBanner: false,
-      
-      // 👇 THIS creates the smooth fade when toggling Dark/Light mode! 👇
-      themeAnimationDuration: const Duration(milliseconds: 600),
-      themeAnimationCurve: Curves.easeInOut,
-      
-      // Starts the app on your new Splash Screen
-      home: const SplashScreen(), 
+    // 🌟 FIXED: We are officially wrapping the entire app in Rani's ThemeProvider!
+    return ChangeNotifierProvider(
+      create: (context) => ThemeProvider(), 
+      child: MaterialApp(
+        title: 'Kuber AI',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.dark(),
+        
+        // This launches your splash screen, which goes to login, which goes to upload!
+        home: const SplashScreen(), 
+      ),
     );
   }
 }
