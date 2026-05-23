@@ -1,5 +1,4 @@
 import re
-
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import pandas as pd
 import joblib
@@ -8,7 +7,7 @@ import random
 
 app = FastAPI(title="CodeFlow AI Double-Model Analyzer")
 
-# Load BOTH of your custom-trained offline AI models
+# --- Load BOTH of your custom-trained offline AI models ---
 classifier = joblib.load('bank_transaction_classifier.pkl')
 recommender_brain = joblib.load('custom_recommender_model.pkl')
 
@@ -58,15 +57,14 @@ def generate_ai_recommendation(highest_spending_category: str, net_savings: floa
         investing_advice = generate_sentence("Investing")
 
     # --- 2. Clean and Filter Raw Dataset Artifacts ---
-    # --- 2. Clean and Filter Raw Dataset Artifacts ---
     def clean_text(text):
         if not text:
             return ""
         
-        # 1. Fix encoding anomalies from Kaggle smart quotes
+        # Fix encoding anomalies from Kaggle smart quotes
         text = text.replace('â€™', "'").replace('â€œ', '"').replace('â€', '"').replace('’', "'")
         
-        # 2. Hard-strip explicit Kaggle phrase tags out completely
+        # Hard-strip explicit Kaggle phrase tags out completely
         bad_phrases = [
             "Budgeting, Goal: Education Fund.", "Budgeting, Goal: Buying a House.",
             "Budgeting, Goal: Emergency Fund.", "Budgeting, Goal: Retirement Savings.",
@@ -78,15 +76,10 @@ def generate_ai_recommendation(highest_spending_category: str, net_savings: floa
         for phrase in bad_phrases:
             text = text.replace(phrase, "")
 
-        # 3. PRONOUN ADAPTER: Convert first-person tweets into professional second-person advice
+        # PRONOUN ADAPTER: Convert first-person tweets into professional second-person advice
         pronoun_map = {
-            r"\bi'm\b": "you're",
-            r"\bi’m\b": "you're",
-            r"\bi am\b": "you are",
-            r"\bi\b": "you",
-            r"\bme\b": "you",
-            r"\bmy\b": "your",
-            r"\bmyself\b": "yourself"
+            r"\bi'm\b": "you're", r"\bi’m\b": "you're", r"\bi am\b": "you are",
+            r"\bi\b": "you", r"\bme\b": "you", r"\bmy\b": "your", r"\bmyself\b": "yourself"
         }
         for pattern, replacement in pronoun_map.items():
             text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
@@ -126,48 +119,81 @@ def generate_ai_recommendation(highest_spending_category: str, net_savings: floa
         
     return final_payload
 
+
 @app.post("/analyze")
 async def analyze_statement(file: UploadFile = File(...)):
-    if not file.filename.endswith('.csv'):
-        raise HTTPException(status_code=400, detail="Invalid file type.")
+    try:
+        if not file.filename.endswith('.csv'):
+            raise HTTPException(status_code=400, detail="Invalid file type.")
+            
+        contents = await file.read()
+        df = pd.read_csv(io.BytesIO(contents))
+        df.columns = [col.strip().capitalize() for col in df.columns]
         
-    contents = await file.read()
-    df = pd.read_csv(io.BytesIO(contents))
-    df.columns = [col.strip().capitalize() for col in df.columns]
-    
-    # Model 1: Predict transaction categories
-    df['Predicted_Category'] = classifier.predict(df['Narration'])
-    
-    # Financial math for metrics
-    total_expense = float(df['Debit'].sum())
-    total_income = float(df['Credit'].sum())
-    category_totals = df[df['Debit'] > 0].groupby('Predicted_Category')['Debit'].sum().to_dict()
-    highest_category = max(category_totals, key=category_totals.get) if category_totals else "Food"
+        # 🚨 THE CRITICAL FIX: Instantly convert any empty cells to 0 so Pandas math doesn't break
+        df = df.fillna(0)
+        
+        # Model 1: Predict transaction categories
+        df['Predicted_Category'] = classifier.predict(df['Narration'])
+        def keyword_override(row):
+            narration = str(row['Narration']).upper()
+            if any(k in narration for k in ['ZOMATO', 'SWIGGY', 'RESTAURANT', 'DINNER', 'FOOD']):
+                return 'Food'
+            if any(k in narration for k in ['AMAZON', 'MYNTRA', 'FLIPKART', 'ZUDIO', 'SHOPPING', 'APPARELS']):
+                return 'Shopping'
+            if any(k in narration for k in ['APOLLO', 'PHARMACY', 'PHARMEASY', 'MEDICINES', 'HOSPITAL', 'CLINIC', '1MG', 'PRACTO']):
+                return 'Healthcare'
+            if any(k in narration for k in ['NETFLIX', 'SPOTIFY', 'BOOKMYSHOW', 'CONCERT', 'MOVIES', 'CINEMAS', 'MAKEMYTRIP', 'FLIGHT']):
+                return 'Entertainment'
+            if any(k in narration for k in ['BESCOM', 'ELECTRICITY', 'FIBER', 'JIO', 'AIRTEL', 'GAS', 'INDANE', 'WATER', 'RENT', 'MAINTENANCE']):
+                return 'Utilities'
+            # If no obvious keywords match, trust the trained machine learning model
+            return row['Predicted_Category']
+        df['Predicted_Category'] = df.apply(keyword_override, axis=1)
+        
+        # Financial math for metrics
+        total_expense = float(df['Debit'].sum())
+        total_income = float(df['Credit'].sum())
+        
+        # Calculate category totals safely
+        debit_df = df[df['Debit'] > 0]
+        if not debit_df.empty:
+            category_totals = debit_df.groupby('Predicted_Category')['Debit'].sum().to_dict()
+            highest_category = max(category_totals, key=category_totals.get)
+        else:
+            category_totals = {}
+            highest_category = "Other"
 
-    # Model 2: Generate text using your trained generative recommender model
-    # We pass the highest category (e.g., 'Food' or 'Shopping') as the seed word
-    custom_ai_text = generate_ai_recommendation(highest_category, total_income - total_expense)
+        # Model 2: Generate text using your trained generative recommender model
+        custom_ai_text = generate_ai_recommendation(highest_category, total_income - total_expense)
 
-    clean_transactions = []
-    for _, row in df.iterrows():
-        clean_transactions.append({
-            "date": str(row.get('Date', 'Unknown')),
-            "narration": str(row['Narration']),
-            "debit": float(row.get('Debit', 0)),
-            "credit": float(row.get('Credit', 0)),
-            "balance": float(row.get('Balance', 0)),
-            "category": str(row['Predicted_Category'])
-        })
+        # 🚨 THE JSON FIX: Ensure absolutely no 'NaN' floats slip through the loop
+        clean_transactions = []
+        for _, row in df.iterrows():
+            clean_transactions.append({
+                "date": str(row.get('Date', 'Unknown')),
+                "narration": str(row.get('Narration', 'Unknown')),
+                "debit": 0.0 if pd.isna(row.get('Debit')) else float(row.get('Debit')),
+                "credit": 0.0 if pd.isna(row.get('Credit')) else float(row.get('Credit')),
+                "balance": 0.0 if pd.isna(row.get('Balance')) else float(row.get('Balance')),
+                "category": str(row.get('Predicted_Category', 'Other'))
+            })
 
-    return {
-        "status": "success",
-        "metrics": {
-            "total_income": total_income,
-            "total_expense": total_expense,
-            "net_savings": total_income - total_expense,
-            "highest_spending_category": highest_category
-        },
-        "category_breakdown": category_totals,
-        "transactions": clean_transactions,
-        "ai_recommendation": custom_ai_text # Powered by Model 2!
-    }
+        return {
+            "status": "success",
+            "metrics": {
+                "total_income": total_income,
+                "total_expense": total_expense,
+                "net_savings": total_income - total_expense,
+                "highest_spending_category": highest_category
+            },
+            "category_breakdown": {k: float(v) for k, v in category_totals.items()},
+            "transactions": clean_transactions,
+            "ai_recommendation": custom_ai_text
+        }
+        
+    except Exception as e:
+        import traceback
+        print("\n❌ CRITICAL CRASH LOG:")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
