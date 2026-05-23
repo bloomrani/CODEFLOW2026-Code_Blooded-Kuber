@@ -1,109 +1,173 @@
+import re
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import pandas as pd
 import joblib
 import io
-import re
+import random
 
-app = FastAPI(title="CodeFlow AI Bank Statement Analyzer")
+app = FastAPI(title="CodeFlow AI Double-Model Analyzer")
 
-# Load your custom-trained machine learning model
-try:
-    classifier = joblib.load('bank_transaction_classifier.pkl')
-except Exception as e:
-    print(f"Error loading model: {e}. Please ensure train_model.py has run successfully.")
+# Load BOTH of your custom-trained offline AI models
+classifier = joblib.load('bank_transaction_classifier.pkl')
+recommender_brain = joblib.load('custom_recommender_model.pkl')
 
-def identify_recurring(narration: str) -> bool:
+def generate_ai_recommendation(highest_spending_category: str, net_savings: float, max_words=15) -> str:
     """
-    Helper logic to flag common recurring strings (EMIs, subscriptions, bills)
-    to fulfill the recurring payment identification requirement.
+    Dual-domain Bigram Markov Chain text generator mapped to Kaggle datasets.
+    Blends ML-generated insights into a clean, human-like layout template.
     """
-    text = str(narration).upper()
-    recurring_keywords = ['NETFLIX', 'SPOTIFY', 'EMI', 'LOAN', 'FIBER', 'BILL', 'SUBSCRIBE', 'COURSERA', 'UDEMY']
-    return any(keyword in text for keyword in recurring_keywords)
+    chains = recommender_brain.get("chains", {})
+    starters = recommender_brain.get("starters", {})
+
+    # Helper function to run the Markov chain for any specific domain
+    def generate_sentence(target_domain):
+        category_chain = chains.get(target_domain)
+        category_starters = starters.get(target_domain)
+
+        if not category_chain or not category_starters:
+            return ""
+
+        current_state = random.choice(category_starters)
+        generated_sentence = [current_state[0], current_state[1]]
+
+        for _ in range(max_words):
+            possible_next_words = category_chain.get(current_state, [])
+            if not possible_next_words:
+                break
+                
+            next_word = random.choice(possible_next_words)
+            generated_sentence.append(next_word)
+            current_state = (current_state[1], next_word)
+
+        raw_text = " ".join(generated_sentence).strip()
+        if not raw_text.endswith('.'):
+            raw_text += '.'
+        return raw_text
+
+    # --- 1. Generate Raw Component Advice Streams ---
+    if highest_spending_category in ['Grocery', 'Shopping', 'Food']:
+        spending_domain = "Budgeting"
+    else:
+        spending_domain = "Saving"
+        
+    spending_advice = generate_sentence(spending_domain)
+    
+    investing_advice = ""
+    if net_savings > 0:
+        investing_advice = generate_sentence("Investing")
+
+    # --- 2. Clean and Filter Raw Dataset Artifacts ---
+    # --- 2. Clean and Filter Raw Dataset Artifacts ---
+    def clean_text(text):
+        if not text:
+            return ""
+        
+        # 1. Fix encoding anomalies from Kaggle smart quotes
+        text = text.replace('â€™', "'").replace('â€œ', '"').replace('â€', '"').replace('’', "'")
+        
+        # 2. Hard-strip explicit Kaggle phrase tags out completely
+        bad_phrases = [
+            "Budgeting, Goal: Education Fund.", "Budgeting, Goal: Buying a House.",
+            "Budgeting, Goal: Emergency Fund.", "Budgeting, Goal: Retirement Savings.",
+            "Investing, Goal: Education Fund.", "Investing, Goal: Buying a House.",
+            "Investing, Goal: Emergency Fund.", "Investing, Goal: Retirement Savings.",
+            "Saving, Goal: Education Fund.", "Saving, Goal: Buying a House.",
+            "Saving, Goal: Emergency Fund.", "Saving, Goal: Retirement Savings."
+        ]
+        for phrase in bad_phrases:
+            text = text.replace(phrase, "")
+
+        # 3. PRONOUN ADAPTER: Convert first-person tweets into professional second-person advice
+        pronoun_map = {
+            r"\bi'm\b": "you're",
+            r"\bi’m\b": "you're",
+            r"\bi am\b": "you are",
+            r"\bi\b": "you",
+            r"\bme\b": "you",
+            r"\bmy\b": "your",
+            r"\bmyself\b": "yourself"
+        }
+        for pattern, replacement in pronoun_map.items():
+            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+            
+        return text.strip()
+
+    clean_spend = clean_text(spending_advice)
+    clean_invest = clean_text(investing_advice)
+
+    # --- 3. The Conversational Compositor Engine ---
+    if clean_spend and clean_invest:
+        final_payload = (
+            f"Based on your statement, your highest spending volume concentrated in your {highest_spending_category} sector. "
+            f"To manage this pattern, remember that {clean_spend.lower()} On the other hand, since you maintained a solid surplus "
+            f"of ₹{net_savings:,.0f} this month, it's a great opportunity to look forward: {clean_invest.lower()}"
+        )
+    elif clean_spend and net_savings <= 0:
+        final_payload = (
+            f"Your financial statement shows heavy activity in the {highest_spending_category} sector, resulting in a deficit this month. "
+            f"Focus on structured adjustments: {clean_spend.lower()} Reducing non-essential expenses will help secure your capital stability."
+        )
+    else:
+        final_payload = (
+            f"Your financial statement shows high activity in {highest_spending_category}. "
+            f"Track your spending closely to optimize your budget and increase your net savings."
+        )
+
+    # Clean up double punctuation points, capitalization, or awkward spacing errors
+    final_payload = final_payload.replace('..', '.').replace(' .', '.').replace('  ', ' ')
+    
+    # Capitalize the first letter of sentences cleanly
+    sentences = final_payload.split('. ')
+    capitalized_sentences = [s.strip().capitalize() for s in sentences if s.strip()]
+    final_payload = ". ".join(capitalized_sentences)
+    if final_payload and not final_payload.endswith('.'):
+        final_payload += '.'
+        
+    return final_payload
 
 @app.post("/analyze")
 async def analyze_statement(file: UploadFile = File(...)):
-    # 1. Validate file extension type
     if not file.filename.endswith('.csv'):
-        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a standard CSV bank statement.")
+        raise HTTPException(status_code=400, detail="Invalid file type.")
         
     contents = await file.read()
+    df = pd.read_csv(io.BytesIO(contents))
+    df.columns = [col.strip().capitalize() for col in df.columns]
     
-    try:
-        # 2. Read the uploaded raw stream into a pandas DataFrame
-        df = pd.read_csv(io.BytesIO(contents))
-        
-        # Ensure column headers match expected casing
-        df.columns = [col.strip().capitalize() for col in df.columns]
-        
-        if 'Narration' not in df.columns:
-            raise HTTPException(status_code=400, detail="Missing required 'Narration' column in statement.")
-        
-        # Fill missing values to prevent execution crashes
-        df['Debit'] = df['Debit'].fillna(0.0).astype(float)
-        df['Credit'] = df['Credit'].fillna(0.0).astype(float)
-        df['Balance'] = df['Balance'].fillna(0.0).astype(float)
-        df['Date'] = df['Date'].fillna("Unknown")
+    # Model 1: Predict transaction categories
+    df['Predicted_Category'] = classifier.predict(df['Narration'])
+    
+    # Financial math for metrics
+    total_expense = float(df['Debit'].sum())
+    total_income = float(df['Credit'].sum())
+    category_totals = df[df['Debit'] > 0].groupby('Predicted_Category')['Debit'].sum().to_dict()
+    highest_category = max(category_totals, key=category_totals.get) if category_totals else "Food"
 
-        # 3. Predict Categories using your Custom AI Pipeline
-        df['Predicted_Category'] = classifier.predict(df['Narration'])
-        
-        # 4. Identify Recurring Payments
-        df['Is_Recurring'] = df['Narration'].apply(identify_recurring)
+    # Model 2: Generate text using your trained generative recommender model
+    # We pass the highest category (e.g., 'Food' or 'Shopping') as the seed word
+    custom_ai_text = generate_ai_recommendation(highest_category, total_income - total_expense)
 
-        # 5. Compute Financial Aggregations
-        total_expense = float(df['Debit'].sum())
-        total_income = float(df['Credit'].sum())
-        net_savings = total_income - total_expense
-        
-        # Extract individual expense records to build the pie chart data
-        expense_mask = df['Debit'] > 0
-        expense_df = df[expense_mask]
-        
-        category_totals = expense_df.groupby('Predicted_Category')['Debit'].sum().to_dict()
-        
-        # Find the highest spending domain metric
-        highest_spending_category = "None"
-        if category_totals:
-            highest_spending_category = max(category_totals, key=category_totals.get)
+    clean_transactions = []
+    for _, row in df.iterrows():
+        clean_transactions.append({
+            "date": str(row.get('Date', 'Unknown')),
+            "narration": str(row['Narration']),
+            "debit": float(row.get('Debit', 0)),
+            "credit": float(row.get('Credit', 0)),
+            "balance": float(row.get('Balance', 0)),
+            "category": str(row['Predicted_Category'])
+        })
 
-        # 6. Separate recurring payment profiles for UI warning/flags cards
-        recurring_df = df[df['Is_Recurring'] == True]
-        recurring_list = []
-        for _, row in recurring_df.iterrows():
-            recurring_list.append({
-                "date": str(row['Date']),
-                "narration": str(row['Narration']),
-                "amount": float(row['Debit']) if row['Debit'] > 0 else float(row['Credit']),
-                "category": str(row['Predicted_Category'])
-            })
-
-        # 7. Format individual transaction rows to display in the main application feed
-        clean_transactions = []
-        for _, row in df.iterrows():
-            clean_transactions.append({
-                "date": str(row['Date']),
-                "narration": str(row['Narration']),
-                "debit": float(row['Debit']),
-                "credit": float(row['Credit']),
-                "balance": float(row['Balance']),
-                "category": str(row['Predicted_Category']),
-                "is_recurring": bool(row['Is_Recurring'])
-            })
-
-        # 8. Return structured payload response directly to the Flutter UI pipeline
-        return {
-            "status": "success",
-            "metrics": {
-                "total_income": total_income,
-                "total_expense": total_expense,
-                "net_savings": net_savings,
-                "highest_spending_category": highest_spending_category
-            },
-            "category_breakdown": category_totals,
-            "recurring_payments": recurring_list,
-            "transactions": clean_transactions
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal data processing error: {str(e)}")
+    return {
+        "status": "success",
+        "metrics": {
+            "total_income": total_income,
+            "total_expense": total_expense,
+            "net_savings": total_income - total_expense,
+            "highest_spending_category": highest_category
+        },
+        "category_breakdown": category_totals,
+        "transactions": clean_transactions,
+        "ai_recommendation": custom_ai_text # Powered by Model 2!
+    }
