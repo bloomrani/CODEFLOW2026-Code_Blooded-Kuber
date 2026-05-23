@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // --- PREMIUM DARK THEME ---
-  static const Color darkBg = Color(0xFF0F172A); // Deep Slate
-  static const Color darkCard = Color(0xFF1E293B); // Raised Slate Layer
-  static const Color darkAccent = Color(0xFF38BDF8); // Neon Cyan
-  static const Color darkDoodle = Color(0xFF334155); // Faint background elements
+  // Deep Bluish-Teal Theme (Eye-friendly)
+  static const Color darkBg = Color(0xFF092624);     // Deep, relaxing bluish-teal background
+  static const Color darkCard = Color(0xFF13403A);   // Elevated teal card color
+  
+  // Light Theme (Soft minty-white to keep the teal vibe)
+  static const Color lightBg = Color(0xFFF0F5F4);
+  static const Color lightCard = Colors.white;
 
-  // --- PREMIUM LIGHT THEME ---
-  static const Color lightBg = Color(0xFFF4F6F8); // Very Soft Pearl
-  static const Color lightCard = Colors.white; // Crisp White
-  static const Color lightAccent = Color(0xFF6366F1); // Deep Indigo
-  static const Color lightDoodle = Color(0xFFE2E8F0); // Faint background elements
+  // Golden Accents
+  static const Color goldAccent = Color(0xFFD4AF37); // Premium Champagne Gold for text
+  static const Color goldBright = Color(0xFFFFD700); // Bright Gold for icons
 
-  // --- SHARED TEXT COLORS ---
-  static const Color textWhite = Color(0xFFF8FAFC);
-  static const Color textBlack = Color(0xFF0F172A);
-  static const Color subTextDark = Color(0xFF94A3B8);
-  static const Color subTextLight = Color(0xFF64748B);
+  // Shared Text Colors
+  static const Color textWhite = Colors.white;
+  static const Color textBlack = Color(0xFF121212);
+  static const Color subTextDark = Color(0xFFA4C2BC); // Soft teal-tinted grey
+  static const Color subTextLight = Color(0xFF63827C);
 }
 
 class ApiConstants {
