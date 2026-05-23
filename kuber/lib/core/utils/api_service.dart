@@ -1,17 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import '../constants/app_constants.dart'; // Make sure this path is correct for your folders!
 
 class ApiService {
-
-static const String baseUrl = 'https://fantastic-exhaust-neutron.ngrok-free.dev'; 
-
-static Future<Map<String, dynamic>?> analyzeStatementWithAI(File csvFile) async {
-  try {
-    var uri = Uri.parse('$baseUrl/analyze'); 
-    
-    // ... rest of your code ...
-
+  static Future<Map<String, dynamic>?> analyzeStatementWithAI(File csvFile) async {
+    try {
+      // Using your constants so you only have to change the ngrok link in one place!
+      var uri = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.analyzeEndpoint}'); 
+      
       var request = http.MultipartRequest('POST', uri);
       request.headers.addAll({
         'ngrok-skip-browser-warning': 'true',
@@ -29,6 +26,12 @@ static Future<Map<String, dynamic>?> analyzeStatementWithAI(File csvFile) async 
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
+        // 👇 THIS IS THE MAGIC DEBUG LINE 👇
+        // It will print exactly what the Python/Node backend is giving us.
+        print('=== RAW BACKEND JSON ===');
+        print(response.body);
+        print('========================');
+        
         return jsonDecode(response.body);
       } else {
         print('Backend Error: ${response.statusCode} - ${response.body}');
