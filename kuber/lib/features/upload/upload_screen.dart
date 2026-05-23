@@ -8,11 +8,10 @@ import '../../providers/theme_provider.dart';
 import '../../core/utils/api_service.dart';
 import '../dashboard/dashboard_screen.dart';
 
-// 👇 THE UPGRADED PERMANENT VAULT 👇
+// --- THE PERMANENT VAULT ---
 class ScanVault {
   static List<Map<String, dynamic>> savedScans = [];
 
-  // Loads data from the phone's hard drive when the app starts
   static Future<void> loadScans() async {
     final prefs = await SharedPreferences.getInstance();
     final String? scansString = prefs.getString('kuber_saved_scans');
@@ -22,9 +21,7 @@ class ScanVault {
     }
   }
 
-  // Saves data permanently
   static Future<void> saveScan(Map<String, dynamic> newScan) async {
-    // Make sure we don't save duplicates
     bool exists = savedScans.any((scan) => scan['scan_date'] == newScan['scan_date']);
     if (!exists) {
       newScan['scan_date'] ??= DateTime.now().toString().substring(0, 16);
@@ -33,13 +30,11 @@ class ScanVault {
     }
   }
 
-  // Deletes a specific scan
   static Future<void> deleteScan(String dateId) async {
     savedScans.removeWhere((scan) => scan['scan_date'] == dateId);
     await _persist();
   }
 
-  // Helper to write to hard drive
   static Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('kuber_saved_scans', jsonEncode(savedScans));
@@ -59,13 +54,12 @@ class _UploadScreenState extends State<UploadScreen> {
   @override
   void initState() {
     super.initState();
-    // Load the saved scans as soon as this screen opens!
     _initVault();
   }
 
   Future<void> _initVault() async {
     await ScanVault.loadScans();
-    if (mounted) setState(() {}); // Refresh UI once data is loaded
+    if (mounted) setState(() {}); 
   }
 
   Future<void> _pickAndUploadFile() async {
@@ -83,9 +77,7 @@ class _UploadScreenState extends State<UploadScreen> {
       final data = await ApiService.analyzeStatementWithAI(file);
       
       if (mounted && data != null) {
-        // Tag it with a date so we can identify it later
         data['scan_date'] = DateTime.now().toString().substring(0, 16);
-        
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => DashboardScreen(analysisData: data)),
         );
@@ -97,9 +89,7 @@ class _UploadScreenState extends State<UploadScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -108,11 +98,10 @@ class _UploadScreenState extends State<UploadScreen> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final bool isDark = themeProvider.isDarkMode;
     
-    final Color bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA);
-    final Color cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final Color textColor = isDark ? Colors.white : Colors.black87;
+    final Color bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF4F6F8);
+    final Color cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color textColor = isDark ? Colors.white : const Color(0xFF0F172A);
 
-    // Reverse the list so the newest scans appear at the top!
     final displayScans = ScanVault.savedScans.reversed.toList();
 
     return Scaffold(
@@ -120,7 +109,8 @@ class _UploadScreenState extends State<UploadScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text("Kuber AI", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+        title: Text("KUBER AI", style: TextStyle(color: textColor, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -128,7 +118,7 @@ class _UploadScreenState extends State<UploadScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 20),
-            Icon(Icons.cloud_upload_rounded, size: 80, color: Colors.blueAccent),
+            Icon(Icons.cloud_upload_rounded, size: 80, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF6366F1)),
             const SizedBox(height: 24),
             Text("Upload Statement", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor)),
             const SizedBox(height: 12),
@@ -138,13 +128,13 @@ class _UploadScreenState extends State<UploadScreen> {
             const SizedBox(height: 48),
             
             _isLoading 
-              ? const CircularProgressIndicator(color: Colors.blueAccent)
+              ? CircularProgressIndicator(color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF6366F1))
               : ElevatedButton.icon(
                   onPressed: _pickAndUploadFile,
                   icon: const Icon(Icons.folder_open, color: Colors.white),
-                  label: const Text("Select CSV File"),
+                  label: const Text("Select CSV File", style: TextStyle(fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
+                    backgroundColor: isDark ? const Color(0xFF38BDF8) : const Color(0xFF6366F1),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -153,7 +143,6 @@ class _UploadScreenState extends State<UploadScreen> {
             
             const SizedBox(height: 60),
 
-            // --- PERMANENT HISTORY SECTION ---
             if (displayScans.isNotEmpty) ...[
               Align(
                 alignment: Alignment.centerLeft,
@@ -172,26 +161,22 @@ class _UploadScreenState extends State<UploadScreen> {
                     color: cardColor,
                     margin: const EdgeInsets.only(bottom: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
                     child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: Colors.blueAccent,
-                        child: Icon(Icons.description_rounded, color: Colors.white),
+                      leading: CircleAvatar(
+                        backgroundColor: isDark ? const Color(0xFF38BDF8).withOpacity(0.2) : const Color(0xFF6366F1).withOpacity(0.2),
+                        child: Icon(Icons.description_rounded, color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF6366F1)),
                       ),
                       title: Text("Statement Analysis", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
                       subtitle: Text("Saved on $date", style: TextStyle(color: textColor.withOpacity(0.5))),
-                      
-                      // 👇 THE NEW DELETE BUTTON 👇
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
                         onPressed: () async {
-                          // Delete from phone memory and refresh the screen instantly
                           await ScanVault.deleteScan(date);
                           setState(() {});
                         },
                       ),
-                      
                       onTap: () {
-                        // Open the saved scan!
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(builder: (context) => DashboardScreen(analysisData: scan)),
                         );

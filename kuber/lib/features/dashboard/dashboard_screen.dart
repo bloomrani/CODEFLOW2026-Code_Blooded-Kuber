@@ -30,6 +30,8 @@ class DashboardScreen extends StatelessWidget {
     final Color subTextColor = isDark ? const Color(0xFFA4C2BC) : AppColors.subTextLight;
     
     final Color baseAccent = isDark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488); 
+    
+    final Color accentColor = isDark ? themeAccent : const Color(0xFF0D9488);
 
     // Glass Cards
     final Color glassCardColor = isDark 
@@ -40,7 +42,6 @@ class DashboardScreen extends StatelessWidget {
         ? const Color(0xFF051821) 
         : Colors.white;
 
-    // --- DATA EXTRACTION ---
     final metrics = analysisData['metrics'] ?? {};
     final double totalIncome = (metrics['total_income'] ?? 0).toDouble();
     final double totalExpense = (metrics['total_expense'] ?? 0).toDouble();
@@ -97,7 +98,6 @@ class DashboardScreen extends StatelessWidget {
           Scaffold(
             backgroundColor: Colors.transparent, 
             
-            // --- APP BAR ---
             appBar: AppBar(
               leading: IconButton(
                 icon: Icon(Icons.arrow_back_ios_new_rounded, color: textColor),
@@ -142,6 +142,7 @@ class DashboardScreen extends StatelessWidget {
 
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () async {
+                if (analysisData.isNotEmpty) await ScanVault.saveScan(analysisData);
                 if (!context.mounted) return;
                 Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const UploadScreen()), (route) => false);
               },
@@ -207,7 +208,8 @@ class DashboardScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: [Text("Kuber's Analysis", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+      const SizedBox(height: 16),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 600),
                         width: double.infinity,
@@ -439,19 +441,35 @@ class DashboardScreen extends StatelessWidget {
   void _showTransactionDetails(BuildContext context, Map<String, dynamic> tx, bool isDebit, double amount, String category, String date, Color solidBgColor, Color textColor, Color subTextColor, Color themeAccent) {
     final double balance = (tx['balance'] ?? 0).toDouble();
     showModalBottomSheet(
-      context: context, backgroundColor: solidBgColor, isScrollControlled: true, elevation: 10, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+      context: context, 
+      backgroundColor: solidBgColor, 
+      isScrollControlled: true, 
+      elevation: 10, 
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
       builder: (context) {
         final bottomPadding = MediaQuery.of(context).padding.bottom;
         return Padding(
           padding: EdgeInsets.only(left: 24.0, right: 24.0, top: 32.0, bottom: 32.0 + bottomPadding),
           child: Column(
-            mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min, 
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              CircleAvatar(radius: 44, backgroundColor: isDebit ? Colors.redAccent.withOpacity(0.12) : Colors.green.withOpacity(0.12), child: Icon(_getCategoryIcon(category), color: isDebit ? Colors.redAccent : Colors.green, size: 40)),
+              CircleAvatar(
+                radius: 44, 
+                backgroundColor: isDebit ? Colors.redAccent.withOpacity(0.12) : Colors.green.withOpacity(0.12), 
+                child: Icon(_getCategoryIcon(category), color: isDebit ? Colors.redAccent : Colors.green, size: 40),
+              ),
               const SizedBox(height: 18),
-              Text("${isDebit ? '-' : '+'} ₹${amount.toStringAsFixed(2)}", style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: isDebit ? Colors.redAccent : Colors.green)),
+              Text(
+                "${isDebit ? '-' : '+'} ₹${amount.toStringAsFixed(2)}", 
+                style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: isDebit ? Colors.redAccent : Colors.green),
+              ),
               const SizedBox(height: 10),
-              Text(tx['narration'] ?? 'Unknown', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: textColor, fontWeight: FontWeight.w600)),
+              Text(
+                tx['narration'] ?? 'Unknown', 
+                textAlign: TextAlign.center, 
+                style: TextStyle(fontSize: 16, color: textColor, fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 36),
               Divider(color: themeAccent.withOpacity(0.2), thickness: 1),
               const SizedBox(height: 18),
@@ -550,17 +568,38 @@ class DashboardScreen extends StatelessWidget {
 
 class LineArtPainter extends CustomPainter {
   final Color color;
+
   LineArtPainter({required this.color});
-  
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color..strokeWidth = 1.3..style = PaintingStyle.stroke;
-    final path1 = Path()..moveTo(0, size.height * 0.1)..lineTo(size.width, size.height * 0.3);
-    final path2 = Path()..moveTo(size.width, size.height * 0.15)..lineTo(size.width * 0.2, size.height);
-    final path3 = Path()..moveTo(size.width * 0.7, 0)..lineTo(size.width * 0.9, size.height * 0.8);
-    final path4 = Path()..moveTo(size.width * 0.5, 0)..cubicTo(size.width * 0.7, size.height * 0.4, size.width * 0.1, size.height * 0.6, 0, size.height * 0.2);
-    canvas.drawPath(path1, paint); canvas.drawPath(path2, paint); canvas.drawPath(path3, paint); canvas.drawPath(path4, paint);
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.3 
+      ..style = PaintingStyle.stroke;
+
+    final path1 = Path()
+      ..moveTo(0, size.height * 0.1)
+      ..lineTo(size.width, size.height * 0.3);
+      
+    final path2 = Path()
+      ..moveTo(size.width, size.height * 0.15)
+      ..lineTo(size.width * 0.2, size.height);
+      
+    final path3 = Path()
+      ..moveTo(size.width * 0.7, 0)
+      ..lineTo(size.width * 0.9, size.height * 0.8);
+      
+    final path4 = Path()
+      ..moveTo(size.width * 0.5, 0)
+      ..cubicTo(size.width * 0.7, size.height * 0.4, size.width * 0.1, size.height * 0.6, 0, size.height * 0.2);
+
+    canvas.drawPath(path1, paint);
+    canvas.drawPath(path2, paint);
+    canvas.drawPath(path3, paint);
+    canvas.drawPath(path4, paint);
   }
+
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

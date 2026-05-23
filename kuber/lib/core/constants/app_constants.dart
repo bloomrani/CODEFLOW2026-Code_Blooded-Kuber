@@ -21,6 +21,7 @@ class AppColors {
 }
 
 class ApiConstants {
+  // Remember to update this if your ngrok restarts!
   static const String baseUrl = 'https://fantastic-exhaust-neutron.ngrok-free.dev';
   static const String analyzeEndpoint = '/analyze';
 }
