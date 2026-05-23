@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Dark Theme
-  static const Color darkBg = Color(0xFF121212);
-  static const Color darkCard = Color(0xFF1E1E1E);
+  // Deep Bluish-Teal Theme (Eye-friendly)
+  static const Color darkBg = Color(0xFF092624);     // Deep, relaxing bluish-teal background
+  static const Color darkCard = Color(0xFF13403A);   // Elevated teal card color
   
-  // Light Theme
-  static const Color lightBg = Color(0xFFF8F9FA);
+  // Light Theme (Soft minty-white to keep the teal vibe)
+  static const Color lightBg = Color(0xFFF0F5F4);
   static const Color lightCard = Colors.white;
 
-  // Shared
-  static const Color accentBlue = Colors.blueAccent;
+  // Golden Accents
+  static const Color goldAccent = Color(0xFFD4AF37); // Premium Champagne Gold for text
+  static const Color goldBright = Color(0xFFFFD700); // Bright Gold for icons
+
+  // Shared Text Colors
   static const Color textWhite = Colors.white;
-  static const Color textBlack = Colors.black87;
-  static const Color subTextDark = Color(0xFFBDBDBD); // Grey.shade400
-  static const Color subTextLight = Color(0xFF757575); // Grey.shade600
+  static const Color textBlack = Color(0xFF121212);
+  static const Color subTextDark = Color(0xFFA4C2BC); // Soft teal-tinted grey
+  static const Color subTextLight = Color(0xFF63827C);
 }
 
 class ApiConstants {
