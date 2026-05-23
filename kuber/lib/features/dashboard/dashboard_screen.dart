@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
-// Change 'kuber_app' to whatever is in your pubspec.yaml name field
-import 'package:kuber/providers/theme_provider.dart'; // Ensure this path matches your folder structure
+import 'package:kuber/providers/theme_provider.dart'; 
 import '../upload/upload_screen.dart'; 
 import '../../core/constants/app_constants.dart'; 
 
@@ -13,7 +12,7 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Hook into ThemeProvider
+   
     final themeProvider = Provider.of<ThemeProvider>(context);
     final bool isDark = themeProvider.isDarkMode;
 
@@ -24,7 +23,7 @@ class DashboardScreen extends StatelessWidget {
     final Color subTextColor = isDark ? AppColors.subTextDark : AppColors.subTextLight;
     final Color accentColor = AppColors.accentBlue;
 
-    // Data extraction
+
     final metrics = analysisData['metrics'] ?? {};
     final double totalIncome = (metrics['total_income'] ?? 0).toDouble();
     final double totalExpense = (metrics['total_expense'] ?? 0).toDouble();
@@ -72,7 +71,7 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- THEME TOGGLE SWITCH ---
+    
             SwitchListTile(
               title: Text("Dark Mode", style: TextStyle(color: textColor)),
               value: isDark,
@@ -81,7 +80,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // --- METRICS ---
+           
             Row(
               children: [
                 Expanded(child: _buildMetricCard("Income", totalIncome, Colors.greenAccent, cardColor, subTextColor, textColor)),
