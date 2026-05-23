@@ -1,8 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:animate_do/animate_do.dart';
-
-
+import 'package:provider/provider.dart';
+// NOTE: Adjust this path if your folder structure is different
+import '../../providers/theme_provider.dart'; 
 import '../../core/utils/api_service.dart';
 import '../dashboard/dashboard_screen.dart';
 
@@ -14,199 +15,91 @@ class UploadScreen extends StatefulWidget {
 }
 
 class _UploadScreenState extends State<UploadScreen> {
-  bool _isUploading = false;
+  bool _isLoading = false;
 
-  
-  Future<void> _pickBankStatement() async {
-    setState(() => _isUploading = true);
+  Future<void> _pickAndUploadFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom, 
+      allowedExtensions: ['csv']
+    );
+    
+    if (result == null) return; 
 
+    setState(() => _isLoading = true);
+    
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['csv', 'pdf'],
-        withData: true, 
-      );
-
-      if (result != null) {
-        
-        final backendResponse = await ApiService.uploadStatement(result.files.first);
-        
-        if (mounted) {
-          if (backendResponse != null) {
-            
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Statement Analyzed Successfully!'),
-                backgroundColor: Colors.greenAccent,
-              ),
-            );
-            
-            
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => DashboardScreen(analysisData: backendResponse), 
-              ),
-            );
-          } else {
-            
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Failed to analyze statement. Check server connection.'),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
-          }
-        }
+      File file = File(result.files.single.path!);
+      final data = await ApiService.analyzeStatementWithAI(file);
+      
+      if (mounted && data != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => DashboardScreen(analysisData: data)),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text("Failed to upload: $e"), backgroundColor: Colors.red),
         );
       }
     } finally {
-      if (mounted) setState(() => _isUploading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final bool isDark = themeProvider.isDarkMode;
+    
+    final Color bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA);
+    final Color textColor = isDark ? Colors.white : Colors.black87;
+
     return Scaffold(
-      body: Stack(
-        children: [
-          
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-              shape: BoxShape.circle,
-               color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                boxShadow: [
-                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                  blurRadius: 120,
-                 ),
-                ],
-             ),
-            ),
-          ),
-          
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 40),
-                  FadeInDown(
-                    duration: const Duration(milliseconds: 600),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Kuber AI', 
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Analyze your financial footprint instantly.',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white.withOpacity(0.6),
-                          ),
-                        ),
-                      ],
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: textColor),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_upload_rounded, size: 80, color: Colors.blueAccent),
+              const SizedBox(height: 24),
+              Text("Upload Statement", 
+                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor)),
+              const SizedBox(height: 12),
+              Text("Upload your bank CSV to let Kuber analyze your spending habits.", 
+                   textAlign: TextAlign.center, 
+                   style: TextStyle(color: textColor.withOpacity(0.6))),
+              const SizedBox(height: 48),
+              
+              // --- THIS IS THE BLOCK THAT WAS MISSING ---
+              _isLoading 
+                ? const CircularProgressIndicator(color: Colors.blueAccent)
+                : ElevatedButton.icon(
+                    onPressed: _pickAndUploadFile,
+                    icon: const Icon(Icons.folder_open, color: Colors.white),
+                    label: const Text("Select CSV File"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
-                  const Spacer(),
-                  
-                 
-                  FadeInUp(
-                    duration: const Duration(milliseconds: 800),
-                    child: GestureDetector(
-                      onTap: _isUploading ? null : _pickBankStatement,
-                      child: Container(
-                        width: double.infinity,
-                        height: 280,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: _isUploading 
-                                ? Theme.of(context).colorScheme.primary 
-                                : Colors.white.withOpacity(0.08),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            )
-                          ],
-                        ),
-                        child: _isUploading
-                            ? Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Text(
-                                    'Kuber is analyzing...',
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.8),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.cloud_upload_outlined,
-                                    size: 64,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  const Text(
-                                    'Upload your bank statement',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Supports CSV or PDF formats',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white.withOpacity(0.4),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                ],
-              ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
