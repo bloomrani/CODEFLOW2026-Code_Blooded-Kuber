@@ -130,7 +130,7 @@ class DashboardScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(16)),
               child: categoryData.isNotEmpty 
-                ? PieChart(PieChartData(sectionsSpace: 2, centerSpaceRadius: 40, sections: _buildPieChartSections(categoryData)))
+                ? PieChart(PieChartData(sectionsSpace: 2, centerSpaceRadius: 40, sections: _buildPieChartSections(context, categoryData)))
                 : Center(child: Text("No expenses to display", style: TextStyle(color: subTextColor))),
             ),
             const SizedBox(height: 32),
@@ -188,19 +188,35 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  List<PieChartSectionData> _buildPieChartSections(Map<String, dynamic> categories) {
-    int colorIndex = 0;
-    final List<Color> colors = [Colors.blueAccent, Colors.orangeAccent, Colors.purpleAccent, Colors.redAccent, Colors.tealAccent];
-    return categories.entries.map((entry) {
-      return PieChartSectionData(
-        color: colors[colorIndex++ % colors.length],
-        value: (entry.value ?? 0).toDouble(),
-        title: entry.key,
-        radius: 60,
-        titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-      );
-    }).toList();
-  }
+ // Change this line
+List<PieChartSectionData> _buildPieChartSections(BuildContext context, Map<String, dynamic> categories) {
+  int colorIndex = 0;
+  final List<Color> colors = [
+    AppColors.accentBlue, 
+    Colors.orangeAccent, 
+    Colors.purpleAccent, 
+    Colors.redAccent, 
+    Colors.tealAccent
+  ];
+
+  final validCategories = categories.entries.where((e) => (e.value ?? 0) > 0);
+
+  return validCategories.map((entry) {
+    return PieChartSectionData(
+      color: colors[colorIndex++ % colors.length],
+      value: (entry.value ?? 0).toDouble(),
+      title: entry.key,
+      radius: 50,
+      titlePositionPercentageOffset: 1.4,
+      titleStyle: TextStyle(
+        fontSize: 10, 
+        fontWeight: FontWeight.bold, 
+        // Now 'context' is recognized because you passed it in
+        color: Theme.of(context).textTheme.bodyMedium?.color, 
+      ),
+    );
+  }).toList();
+}
 
   IconData _getCategoryIcon(String category) {
     final cat = category.toLowerCase();
