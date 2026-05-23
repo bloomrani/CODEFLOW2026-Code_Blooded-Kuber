@@ -40,7 +40,7 @@ By simplifying complex banking data, KUBER empowers users to manage money more c
 * **Frontend:** HTML, CSS, JavaScript
 * **Backend:** Node.js / Python *(customize as needed)*
 * **AI/ML:** OpenAI API / NLP Models *(customize as needed)*
-* **Database:** MongoDB / MySQL *(optional)*
+* **Database:** Firestore[ / MySQL *(optional)*]
 
 ---
 
