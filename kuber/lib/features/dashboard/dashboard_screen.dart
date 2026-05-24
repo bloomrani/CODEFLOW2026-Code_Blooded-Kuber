@@ -12,7 +12,7 @@ import 'package:kuber/providers/theme_provider.dart';
 import '../upload/upload_screen.dart'; 
 import '../loading/settings_screen.dart'; 
 import '../../core/constants/app_constants.dart'; 
-
+import '../../core/utils/scan_vault.dart' as vault;
 // Import html safely for Web downloads without breaking Mobile builds
 import 'dart:html' if (dart.library.io) 'dart:io' as html;
 
@@ -192,7 +192,7 @@ class DashboardScreen extends StatelessWidget {
                       ElevatedButton(
                         onPressed: () async {
                           analysisData['scan_name'] = nameController.text.trim();
-                          // await ScanVault.saveScan(analysisData); // Assuming this is handled elsewhere or unimplemented
+                          await vault.ScanVault.saveScan(analysisData); // Assuming this is handled elsewhere or unimplemented
                           
                           if (!context.mounted) return;
                           Navigator.pop(context); 
