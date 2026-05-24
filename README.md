@@ -1,5 +1,7 @@
 # 💰 KUBER — AI-Powered Bank Statement Analyzer
 
+### 🌐 [Live Landing Page & Download Gateway](https://codeflow-2026-code-blooded-kuber.vercel.app/)
+
 **KUBER** is an intelligent finance application designed to simplify the way people understand their bank statements.
 The application uses AI to automatically read and analyze Indian bank statements, organize transactions, categorize expenses and income, and generate meaningful financial insights in a simple and user-friendly way.
 
@@ -46,6 +48,15 @@ Running custom statistical probability matrices requires significant RAM to hold
 To guarantee zero latency, prevent cold-start delays, and ensure the judges experience the app flawlessly during the review period, **our FastAPI backend is currently hosted on a dedicated local machine and securely tunneled to the public internet using ngrok.** This allows the Flutter frontend to communicate seamlessly with our heavy ML models in real-time.
 
 ---
+# 🌐 Landing Page & Distribution Architecture
+
+To provide a seamless experience for end-users and judges alike, KUBER utilizes a decoupled distribution model managed via a central, high-performance landing page.
+
+* **Landing Page Hosting:** Hosted on **Vercel Edge Networks** for instant loading times and global availability.
+* **Web App Gateway:** Features an "Open in Browser" option that routes users directly to our production Single Page Application (SPA), securely deployed on **Firebase Hosting**.
+* **Android Distribution:** Features a "Download Now" button built with an automated bypass script that links directly to our Google Drive storage node. This ensures that the production-ready **Android Package (APK)** begins downloading instantly to mobile devices without hitting complex browser preview walls or access restrictions.
+
+This architecture completely isolates heavy data processing from user onboarding, ensuring a high-availability, zero-friction setup.
 ---
 # 🎡 FROM PDF & CSV FILE TO INSIGHTS IN FIVE STEPS
 ```mermaid
