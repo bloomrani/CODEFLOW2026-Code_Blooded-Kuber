@@ -52,6 +52,7 @@ flowchart LR
     style E fill:#FCE8EC,stroke:#D6336C,color:#A61E4D,stroke-width:2px
 ```
 
+---
 # 🛠️ Technologies Used
 
 * **Frontend:** HTML, CSS, JavaScript
