@@ -26,7 +26,7 @@ By simplifying complex banking data, KUBER empowers users to manage money more c
 # ✨ Features
 
 * 📄 Automatic Bank Statement Analysis
-* 🤖 AI-Powered Transaction Understanding
+* 🤖 CUSTOM AI-Powered Transaction Understanding
 * 💸 Expense & Income Categorization
 * 📊 Financial Insights & Spending Patterns
 * 🧾 Organized Transaction Management
@@ -56,8 +56,8 @@ flowchart LR
 # 🛠️ Technologies Used
 
 * **Frontend:** HTML, CSS, JavaScript
-* **Backend:** Node.js / Python *(customize as needed)*
-* **AI/ML:** OpenAI API / NLP Models *(customize as needed)*
+* **Backend:**  Python 
+* **AI/ML:**   NAIVE BAYES MODEL & MARKOV CHAIN MODEL*(customize as needed)*
 * **Database:** Firestore[ / MySQL *(optional)*]
 
 ---
