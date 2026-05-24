@@ -831,21 +831,32 @@ class DashboardScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.auto_awesome, color: themeAccent, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    "KUBER'S FINANCIAL INTELLIGENCE",
-                    style: TextStyle(
-                      color: themeAccent,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      fontSize: 12,
+              // 🌟 Wrap the left title elements in an Expanded container 
+              // to keep them from shoving the badge off-screen on mobile constraints
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.auto_awesome, color: themeAccent, size: 18),
+                    const SizedBox(width: 6),
+                    Expanded( // 🌟 Added second wrap so the text layout engine scales strings down
+                      child: Text(
+                        "KUBER'S FINANCIAL INTELLIGENCE",
+                        overflow: TextOverflow.ellipsis, // Prevents overflow layout clipping
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: themeAccent,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                          fontSize: 11, // Sized slightly down to optimize mobile real-estate cleanly
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8), // Keeps standard spacing boundary clear
+              
+              // Your badge stays exactly as Rani built it!
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -854,10 +865,11 @@ class DashboardScreen extends StatelessWidget {
                   border: Border.all(color: Colors.green.withOpacity(0.5)),
                 ),
                 child: const Row(
+                  mainAxisSize: MainAxisSize.min, // Prevents container from stretching layout
                   children: [
-                    Icon(Icons.trending_up, color: Colors.green, size: 14),
+                    Icon(Icons.trending_up, color: Colors.green, size: 12),
                     SizedBox(width: 4),
-                    Text("Verified", style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text("Verified", style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
                   ],
                 ),
               )
