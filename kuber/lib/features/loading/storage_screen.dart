@@ -1,94 +1,99 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 
-class StorageScreen extends StatefulWidget {
+class StorageScreen extends StatelessWidget {
   const StorageScreen({super.key});
 
   @override
-  State<StorageScreen> createState() => _StorageScreenState();
-}
-
-class _StorageScreenState extends State<StorageScreen> {
-  List<FileSystemEntity> _pdfFiles = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadFiles();
-  }
-
-  Future<void> _loadFiles() async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final files = directory.listSync().where((file) => file.path.endsWith('.pdf')).toList();
-      setState(() {
-        _pdfFiles = files;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _deleteFile(File file) async {
-    await file.delete();
-    _loadFiles(); // Refresh list
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final bgColor = isDark ? const Color(0xFF030D14) : const Color(0xFFF5F3F9);
-    final accentColor = isDark ? const Color(0xFFFFD700) : const Color(0xFF7E22CE);
-    final cardColor = isDark ? const Color(0xFF1A3A45) : Colors.white;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    
+    final Color premiumGold = const Color(0xFFFFD700); 
+    final Color richLavender = const Color(0xFF7E22CE); 
+    final Color themeAccent = isDark ? premiumGold : richLavender;
+    final Color textColor = isDark ? Colors.white : const Color(0xFF1E293B);
 
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        title: Text("Downloaded Reports", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent, elevation: 0, iconTheme: IconThemeData(color: textColor),
-      ),
-      body: _isLoading 
-        ? Center(child: CircularProgressIndicator(color: accentColor))
-        : _pdfFiles.isEmpty
-            ? Center(child: Text("No PDFs found in local storage.", style: TextStyle(color: textColor)))
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _pdfFiles.length,
-                itemBuilder: (context, index) {
-                  final file = File(_pdfFiles[index].path);
-                  final fileName = file.path.split('/').last;
-
-                  return Card(
-                    color: cardColor,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: ListTile(
-                      leading: Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent),
-                      title: Text(fileName, style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 14)),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.share_rounded, color: accentColor),
-                            onPressed: () => Share.shareXFiles([XFile(file.path)]),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_rounded, color: Colors.red),
-                            onPressed: () => _deleteFile(file),
-                          ),
-                        ],
-                      ),
+      body: Stack(
+        children: [
+          // Background Gradient Logic mapped to exactly mirror Dashboard rules
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              gradient: isDark 
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF125C7A), Color(0xFF030D14)],
+                      stops: [0.0, 0.85], 
+                    )
+                  : const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFFFFF), Color(0xFFE9D5FF)],
+                      stops: [0.1, 1.0],
                     ),
-                  );
-                },
-              ),
+            ),
+          ),
+          
+          // Dedicated Abstract Line Art layer for the vault
+          SizedBox(
+            width: double.infinity, 
+            height: double.infinity,
+            child: CustomPaint(
+              painter: StorageLineArtPainter(color: themeAccent.withOpacity(0.08)), 
+            ),
+          ),
+
+          SafeArea(
+            child: Column(
+              children: [
+                AppBar(
+                  title: Text("Storage Vault", style: TextStyle(color: textColor, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  iconTheme: IconThemeData(color: textColor),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      "Your saved statements will appear here.",
+                      style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
+
+class StorageLineArtPainter extends CustomPainter {
+  final Color color;
+  StorageLineArtPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.3 
+      ..style = PaintingStyle.stroke;
+
+    final path1 = Path()..moveTo(size.width * 0.1, 0)..lineTo(size.width * 0.9, size.height * 0.4);
+    final path2 = Path()..moveTo(0, size.height * 0.6)..cubicTo(size.width * 0.3, size.height * 0.5, size.width * 0.6, size.height * 0.8, size.width, size.height * 0.7);
+    final path3 = Path()..moveTo(size.width * 0.8, size.height)..lineTo(size.width * 0.4, size.height * 0.2);
+
+    canvas.drawPath(path1, paint);
+    canvas.drawPath(path2, paint);
+    canvas.drawPath(path3, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

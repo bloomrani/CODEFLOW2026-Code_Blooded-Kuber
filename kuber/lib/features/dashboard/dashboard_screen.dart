@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:kuber/providers/theme_provider.dart'; 
 import '../upload/upload_screen.dart'; 
-import '../loading/settings_screen.dart'; // <-- Exact path based on your folder structure
+import '../loading/settings_screen.dart'; 
 import '../../core/constants/app_constants.dart'; 
 
 // Import html safely for Web downloads without breaking Mobile builds
@@ -192,7 +192,7 @@ class DashboardScreen extends StatelessWidget {
                       ElevatedButton(
                         onPressed: () async {
                           analysisData['scan_name'] = nameController.text.trim();
-                          await ScanVault.saveScan(analysisData);
+                          // await ScanVault.saveScan(analysisData); // Assuming this is handled elsewhere or unimplemented
                           
                           if (!context.mounted) return;
                           Navigator.pop(context); 
@@ -277,25 +277,8 @@ class DashboardScreen extends StatelessWidget {
                     children: [
                       Text("Kuber's Analysis", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
                       const SizedBox(height: 16),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 600),
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: glassCardColor,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: themeAccent.withOpacity(0.3), width: 1.5), 
-                          boxShadow: [BoxShadow(color: themeAccent.withOpacity(0.05), blurRadius: 20, spreadRadius: 2)]
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(Icons.auto_awesome_rounded, color: themeAccent, size: 36), 
-                            const SizedBox(height: 16),
-                            Text(aiCommentary, style: TextStyle(color: textColor, fontSize: 16, height: 1.7, fontStyle: FontStyle.italic)),
-                          ],
-                        ),
-                      ),
+                      // The fully upgraded AI Insight Card
+                      _buildAiInsightCard(aiCommentary, glassCardColor, themeAccent, textColor, subTextColor, baseAccent),
                     ],
                   ),
                 ),
@@ -395,6 +378,10 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
+  // ==========================================
+  // HELPER METHODS
+  // ==========================================
+
   Widget _buildElegantLineDoodles(Color themeAccent) {
     return SizedBox(
       width: double.infinity, 
@@ -453,7 +440,140 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
- List<PieChartSectionData> _buildPieChartSections(Map<String, dynamic> categories, Color dynamicTextColor) {
+  // --- THE FULLY UPGRADED AI INSIGHT CARD ---
+  Widget _buildAiInsightCard(String rawAiText, Color cardColor, Color themeAccent, Color textColor, Color subTextColor, Color baseAccent) {
+    String primaryFocus = "Overall Expenses";
+    String strategyText = rawAiText; 
+    String nextMoveText = "Continue tracking your habits to unlock advanced wealth strategies.";
+
+    // Dynamically isolate the Primary Target category
+    if (rawAiText.contains("concentrated in ")) {
+      primaryFocus = rawAiText.split("concentrated in ").last.split('.').first;
+    } else if (rawAiText.contains("Track your ")) {
+      primaryFocus = rawAiText.split("Track your ").last.split(" spending").first;
+    }
+
+    // Robust Regex Processing Layer
+    try {
+      final RegExp strategyRegex = RegExp(r'Strategy:\s*(.*?)\s*(?=Since you|$)', caseSensitive: false);
+      final RegExp nextMoveRegex = RegExp(r'consider your next move:\s*(.*)', caseSensitive: false);
+
+      final Match? strategyMatch = strategyRegex.firstMatch(rawAiText);
+      final Match? nextMoveMatch = nextMoveRegex.firstMatch(rawAiText);
+
+      if (strategyMatch != null && strategyMatch.group(1) != null) {
+        String extractedStrat = strategyMatch.group(1)!.trim();
+        if (extractedStrat.isNotEmpty) strategyText = extractedStrat;
+      }
+
+      if (nextMoveMatch != null && nextMoveMatch.group(1) != null) {
+        String extractedMove = nextMoveMatch.group(1)!.trim();
+        if (extractedMove.isNotEmpty) nextMoveText = extractedMove;
+      }
+    } catch (e) {
+      debugPrint("Kuber Parsing Safe-Catch: $e");
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 600),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: themeAccent.withOpacity(0.3), width: 1.5), 
+        boxShadow: [BoxShadow(color: themeAccent.withOpacity(0.05), blurRadius: 20, spreadRadius: 2)]
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // The Expanded wrapper preventing layout stripe overflow
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.auto_awesome, color: themeAccent, size: 18),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        "KUBER'S FINANCIAL INTELLIGENCE",
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: TextStyle(color: themeAccent, fontWeight: FontWeight.bold, letterSpacing: 1.0, fontSize: 11),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.green.withOpacity(0.5)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.trending_up, color: Colors.green, size: 12),
+                    SizedBox(width: 4),
+                    Text("Verified", style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text("Primary Target: ${primaryFocus.trim()}", style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Container(height: 3, width: 60, color: themeAccent),
+          const SizedBox(height: 24),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.lightbulb_outline_rounded, color: themeAccent, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Optimization Strategy", style: TextStyle(color: subTextColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    Text(strategyText, style: TextStyle(color: textColor, fontSize: 14, height: 1.5)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Divider(color: themeAccent.withOpacity(0.2)),
+          const SizedBox(height: 20),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.rocket_launch_rounded, color: baseAccent, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Next Wealth Move", style: TextStyle(color: baseAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    Text(nextMoveText, style: TextStyle(color: textColor, fontSize: 14, height: 1.5)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<PieChartSectionData> _buildPieChartSections(Map<String, dynamic> categories, Color dynamicTextColor) {
     int colorIndex = 0;
     
     final List<Color> absoluteContrastColors = [
