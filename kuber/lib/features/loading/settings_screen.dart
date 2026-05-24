@@ -29,13 +29,6 @@ class SettingsScreen extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Column(
               children: [
-                SwitchListTile(
-                  activeColor: accentColor,
-                  title: Text("Dark Mode", style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
-                  value: themeProvider.isDarkMode,
-                  onChanged: (val) => themeProvider.toggleTheme(val),
-                ),
-                Divider(color: textColor.withOpacity(0.1), height: 1),
                 ListTile(
                   leading: Icon(Icons.person_rounded, color: accentColor),
                   title: Text("Account & Profile", style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
@@ -54,4 +47,4 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-}
+} 

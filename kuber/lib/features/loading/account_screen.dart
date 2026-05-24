@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
-// import '../../core/utils/auth_service.dart'; // Uncomment this
-// import '../auth/login_screen.dart'; // Uncomment this
+// import '../../core/utils/auth_service.dart'; // Uncomment when auth is ready
+// import '../auth/login_screen.dart'; // Uncomment when auth is ready
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -13,6 +13,11 @@ class AccountScreen extends StatelessWidget {
     final textColor = isDark ? Colors.white : Colors.black87;
     final bgColor = isDark ? const Color(0xFF030D14) : const Color(0xFFF5F3F9);
     final accentColor = isDark ? const Color(0xFFFFD700) : const Color(0xFF7E22CE);
+
+    // TODO: Replace these with your actual Auth backend variables later!
+    const String userName = "Demo User";
+    const String userEmail = "user@codeflow.com";
+    const String userRole = "Kuber Beta Tester";
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -29,8 +34,11 @@ class AccountScreen extends StatelessWidget {
               child: Icon(Icons.person_rounded, size: 50, color: accentColor),
             ),
             const SizedBox(height: 20),
-            Text("Rani", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor)),
-            Text("rani@example.com", style: TextStyle(fontSize: 14, color: textColor.withOpacity(0.6))),
+            Text(userName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor)),
+            const SizedBox(height: 6),
+            Text(userRole, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, height: 1.5, color: textColor.withOpacity(0.6))),
+            const SizedBox(height: 4),
+            Text(userEmail, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, height: 1.5, color: textColor.withOpacity(0.6))),
             const Spacer(),
             
             SizedBox(
