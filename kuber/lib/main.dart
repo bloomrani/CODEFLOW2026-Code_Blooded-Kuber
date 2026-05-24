@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // 👇 CRITICAL: Make sure this path exactly matches where the file you just opened is!
 // If it's inside a 'theme' folder, it should be: import 'theme/theme_provider.dart';
@@ -14,6 +15,7 @@ void main() async {
   
   // 2. Turn on Firebase
   await Firebase.initializeApp(); 
+  await FirebaseAuth.instance.signOut();
 
   // 3. Run the app
   runApp(const MyApp());
