@@ -36,65 +36,48 @@ By simplifying complex banking data, KUBER empowers users to manage money more c
 ---
 # 🎡 FROM PDF & CSV FILE TO INSIGHTS IN FOUR STEPS
 Here's your workflow diagram. Each step flows cleanly into the next
-<svg width="100%" viewBox="0 0 680 520" role="img">
-  <title>Bank Statement AI Analysis Workflow</title>
-  <desc>Four-step workflow: Upload Statement, Extract & Parse, Categorize & Analyze, Generate Insights</desc>
+<svg width="680" height="520" viewBox="0 0 680 520" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </marker>
   </defs>
 
-  <!-- Step 1 -->
-  <g class="node c-blue">
-    <rect x="40" y="40" width="600" height="86" rx="12" stroke-width="0.5"/>
-    <text class="th" font-size="22" font-weight="700" x="90" y="72" dominant-baseline="central">
-      <tspan class="th" font-size="28" font-weight="700">01</tspan>
-      <tspan dx="14">Upload Statement</tspan>
-    </text>
-    <text class="ts" x="90" y="104" dominant-baseline="central">User uploads a single Indian bank statement as PDF or CSV file through a simple, clean interface.</text>
-  </g>
+  <!-- Step 1 - Blue -->
+  <rect x="40" y="40" width="600" height="86" rx="12" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.5"/>
+  <text x="90" y="76" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#0C447C">01</text>
+  <text x="138" y="76" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#0C447C">Upload Statement</text>
+  <text x="90" y="108" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#185FA5">User uploads a single Indian bank statement as PDF or CSV file through a simple, clean interface.</text>
 
   <!-- Arrow 1→2 -->
-  <line x1="340" y1="126" x2="340" y2="158" class="arr" marker-end="url(#arrow)" stroke-width="1.5"/>
+  <line x1="340" y1="126" x2="340" y2="156" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <!-- Step 2 -->
-  <g class="node c-teal">
-    <rect x="40" y="158" width="600" height="86" rx="12" stroke-width="0.5"/>
-    <text class="th" x="90" y="190" dominant-baseline="central">
-      <tspan class="th" font-size="28" font-weight="700">02</tspan>
-      <tspan dx="14" font-size="15" font-weight="700">Extract &amp; Parse</tspan>
-    </text>
-    <text class="ts" x="90" y="222" dominant-baseline="central">AI reads the document, identifies all transactions, dates, amounts, and merchant names.</text>
-  </g>
+  <!-- Step 2 - Teal -->
+  <rect x="40" y="158" width="600" height="86" rx="12" fill="#E1F5EE" stroke="#1D9E75" stroke-width="0.5"/>
+  <text x="90" y="194" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#085041">02</text>
+  <text x="138" y="194" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#085041">Extract &amp; Parse</text>
+  <text x="90" y="226" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#0F6E56">AI reads the document, identifies all transactions, dates, amounts, and merchant names.</text>
 
   <!-- Arrow 2→3 -->
-  <line x1="340" y1="244" x2="340" y2="276" class="arr" marker-end="url(#arrow)" stroke-width="1.5"/>
+  <line x1="340" y1="244" x2="340" y2="274" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <!-- Step 3 -->
-  <g class="node c-purple">
-    <rect x="40" y="276" width="600" height="86" rx="12" stroke-width="0.5"/>
-    <text class="th" x="90" y="308" dominant-baseline="central">
-      <tspan class="th" font-size="28" font-weight="700">03</tspan>
-      <tspan dx="14" font-size="15" font-weight="700">Categorize &amp; Analyze</tspan>
-    </text>
-    <text class="ts" x="90" y="340" dominant-baseline="central">Every transaction is tagged and grouped. Patterns, trends, and anomalies are detected.</text>
-  </g>
+  <!-- Step 3 - Purple -->
+  <rect x="40" y="276" width="600" height="86" rx="12" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.5"/>
+  <text x="90" y="312" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#3C3489">03</text>
+  <text x="138" y="312" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#3C3489">Categorize &amp; Analyze</text>
+  <text x="90" y="344" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#534AB7">Every transaction is tagged and grouped. Patterns, trends, and anomalies are detected.</text>
 
   <!-- Arrow 3→4 -->
-  <line x1="340" y1="362" x2="340" y2="394" class="arr" marker-end="url(#arrow)" stroke-width="1.5"/>
+  <line x1="340" y1="362" x2="340" y2="392" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <!-- Step 4 -->
-  <g class="node c-amber">
-    <rect x="40" y="394" width="600" height="86" rx="12" stroke-width="0.5"/>
-    <text class="th" x="90" y="426" dominant-baseline="central">
-      <tspan class="th" font-size="28" font-weight="700">04</tspan>
-      <tspan dx="14" font-size="15" font-weight="700">Generate Insights</tspan>
-    </text>
-    <text class="ts" x="90" y="458" dominant-baseline="central">A rich summary and actionable insights are surfaced, helping users understand their finances.</text>
-  </g>
+  <!-- Step 4 - Amber -->
+  <rect x="40" y="394" width="600" height="86" rx="12" fill="#FAEEDA" stroke="#BA7517" stroke-width="0.5"/>
+  <text x="90" y="430" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#633806">04</text>
+  <text x="138" y="430" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#633806">Generate Insights</text>
+  <text x="90" y="462" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#854F0B">A rich summary and actionable insights are surfaced, helping users understand their finances.</text>
+
 </svg>
----
 
 # 🛠️ Technologies Used
 
