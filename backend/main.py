@@ -5,6 +5,7 @@ import joblib
 import io
 import random
 from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="CodeFlow AI Double-Model Analyzer")
 app.add_middleware(
     CORSMiddleware,
@@ -93,7 +94,22 @@ async def analyze_statement(file: UploadFile = File(...)):
             
         contents = await file.read()
         df = pd.read_csv(io.BytesIO(contents))
+        
+        # Standardize initial column strings to Title Case to make matching easier
         df.columns = [col.strip().capitalize() for col in df.columns]
+        
+        # 🌟 THE BANK-AGNOSTIC FIX: Map varying bank headers to Kuber's internal standard
+        column_aliases = {
+            'Description': 'Narration',
+            'Particulars': 'Narration',
+            'Remarks': 'Narration',
+            'Transaction remarks': 'Narration',
+            'Withdrawals': 'Debit',
+            'Withdrawal': 'Debit',
+            'Deposits': 'Credit',
+            'Deposit': 'Credit'
+        }
+        df.rename(columns=column_aliases, inplace=True)
         
         # 🚨 THE CRITICAL FIX: Instantly convert any empty cells to 0 so Pandas math doesn't break
         df = df.fillna(0)
@@ -117,7 +133,9 @@ async def analyze_statement(file: UploadFile = File(...)):
                 return 'Healthcare'
             if any(k in narration for k in ['NETFLIX', 'SPOTIFY', 'BOOKMYSHOW', 'CONCERT', 'MOVIES', 'CINEMAS', 'MAKEMYTRIP', 'FLIGHT']):
                 return 'Entertainment'
-            if any(k in narration for k in ['BESCOM', 'ELECTRICITY', 'FIBER', 'JIO', 'AIRTEL', 'GAS', 'INDANE', 'WATER', 'RENT', 'MAINTENANCE']):
+            if any(k in narration for k in ['RENT', 'MAINTENANCE', 'HOUSING', 'SOCIETY']):
+                return 'Housing'
+            if any(k in narration for k in ['BESCOM', 'ELECTRICITY', 'FIBER', 'JIO', 'AIRTEL', 'GAS', 'INDANE', 'WATER']):
                 return 'Utilities'
                 
             # If no obvious keywords match, trust the trained machine learning model
