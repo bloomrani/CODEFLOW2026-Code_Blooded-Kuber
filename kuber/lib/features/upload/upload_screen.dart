@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/theme_provider.dart'; 
 import '../../core/utils/api_service.dart';
 import '../dashboard/dashboard_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 // --- THE PERMANENT VAULT ---
 class ScanVault {
@@ -66,7 +67,8 @@ class _UploadScreenState extends State<UploadScreen> {
   Future<void> _pickAndUploadFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom, 
-      allowedExtensions: ['csv']
+      allowedExtensions: ['csv'], // <-- Fixed missing comma
+      withData: true,
     );
     
     if (result == null) return; 
@@ -74,8 +76,19 @@ class _UploadScreenState extends State<UploadScreen> {
     setState(() => _isLoading = true);
     
     try {
-      File file = File(result.files.single.path!);
-      final data = await ApiService.analyzeStatementWithAI(file);
+      Map<String, dynamic>? data;
+
+      // 🌟 THE CRITICAL FIX: Branch logic based on the platform!
+      if (kIsWeb) {
+        // 🌐 WEB: Use the raw byte stream because paths are blocked
+        final bytes = result.files.single.bytes!;
+        final fileName = result.files.single.name;
+        data = await ApiService.analyzeStatementWithAIWeb(bytes, fileName);
+      } else {
+        // 📱 MOBILE: Use the standard file path
+        File file = File(result.files.single.path!);
+        data = await ApiService.analyzeStatementWithAI(file);
+      }
       
       if (mounted && data != null) {
         data['scan_date'] = DateTime.now().toString().substring(0, 16);
@@ -83,7 +96,7 @@ class _UploadScreenState extends State<UploadScreen> {
         
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => DashboardScreen(analysisData: data)),
+            MaterialPageRoute(builder: (context) => DashboardScreen(analysisData: data!)),
           );
         }
       }
