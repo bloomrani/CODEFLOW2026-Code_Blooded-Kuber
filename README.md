@@ -90,10 +90,10 @@ This project is still under license process.
 
 # 👨‍💻 Developed By
 
-**Rani Bhattarcharjee**
+--> **Rani Bhattarcharjee**(Leader & Software Design)
 
-**Ritankar Bose**
+--> **Ritankar Bose**(Full Stack Development)
 
-**Abhirup Ghosh**
+--> **Abhirup Ghosh**(Web development & Software Architect)
 
 B.Tech CSE Students | 2nd YEAR 
