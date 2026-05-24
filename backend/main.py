@@ -5,6 +5,7 @@ import joblib
 import io
 import random
 from fastapi.middleware.cors import CORSMiddleware
+from pypdf import PdfReader
 
 app = FastAPI(title="CodeFlow AI Double-Model Analyzer")
 app.add_middleware(
@@ -19,6 +20,85 @@ app.add_middleware(
 classifier = joblib.load('bank_transaction_classifier.pkl')
 recommender_brain = joblib.load('custom_recommender_model.pkl')
 
+def extract_df_from_pdf(pdf_bytes: bytes) -> pd.DataFrame:
+    """Parses text-wrapped, multi-line Indian bank PDF streams into data rows."""
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    all_text = ""
+    
+    for page in reader.pages:
+        text_content = page.extract_text()
+        if text_content:
+            all_text += text_content + "\n"
+        
+    parsed_rows = []
+    
+    # Stateful buffers to track our multi-line assembly line
+    current_date_fragments = []
+    current_narration_fragments = []
+
+    # Regex patterns to detect states
+    date_part_pattern = re.compile(r'^(\d{2}-|[A-Za-z]{3}-|\d{2,4})') # Catches "01-", "Sep-", "2023"
+    full_date_validation = re.compile(r'^\d{2}-[A-Za-z0-9]{3}-\d{2,4}$') # Verifies "01-Sep-2023"
+
+    for line in all_text.split('\n'):
+        cleaned_line = line.strip()
+        if not cleaned_line:
+            continue
+            
+        # Try to parse numeric column block from the right side
+        parts = cleaned_line.rsplit(maxsplit=3)
+        
+        # STATE 1: We found the numeric tail end of a transaction!
+        if len(parts) >= 3 and all(p.replace('.', '', 1).replace('-', '').isdigit() for p in parts[-3:]):
+            try:
+                val3 = parts[-1].replace(',', '')  # Balance
+                val2 = parts[-2].replace(',', '')  # Credit
+                val1 = parts[-3].replace(',', '')  # Debit
+                
+                # Grab any stray narration sitting on this number line
+                if len(parts) > 3:
+                    current_narration_fragments.append(cleaned_line.rsplit(maxsplit=3)[0].strip())
+                
+                # Assemble our buffered components
+                assembled_date = "".join(current_date_fragments).strip()
+                assembled_narration = " ".join(current_narration_fragments).strip()
+                
+                # Fallback if the date buffer wasn't filled correctly
+                if not assembled_date or not full_date_validation.match(assembled_date):
+                    assembled_date = "Unknown"
+                    
+                debit_val = float(val1) if val1 != '0' else 0.0
+                credit_val = float(val2) if val2 != '0' else 0.0
+                balance_val = float(val3)
+                
+                parsed_rows.append({
+                    "Date": assembled_date,
+                    "Narration": assembled_narration if assembled_narration else "Bank Transaction",
+                    "Debit": debit_val,
+                    "Credit": credit_val,
+                    "Balance": balance_val
+                })
+                
+                # 🎉 Clear the buffers immediately for the next transaction row block
+                current_date_fragments = []
+                current_narration_fragments = []
+                continue
+                
+            except ValueError:
+                pass # Fall through to string processing if number casting hit an edge case
+                
+        # STATE 2: Accumulate Date fragments ("01-", "Sep-", "2023")
+        if date_part_pattern.match(cleaned_line) and len(cleaned_line) <= 5:
+            current_date_fragments.append(cleaned_line)
+            
+        # STATE 3: It's text, it's not a short date piece, and it's not numbers -> It's Narration!
+        elif not cleaned_line.startswith("Statement") and not cleaned_line.startswith("Account") and not cleaned_line.startswith("Period") and "Date Narration" not in cleaned_line:
+            current_narration_fragments.append(cleaned_line)
+
+    if not parsed_rows:
+        raise ValueError("Could not parse transaction rows from this fractured PDF layout.")
+        
+    return pd.DataFrame(parsed_rows)
 def generate_ai_recommendation(highest_spending_category: str, net_savings: float, max_words=20) -> str:
     chains = recommender_brain.get("chains", {})
     starters = recommender_brain.get("starters", {})
@@ -89,28 +169,41 @@ def generate_ai_recommendation(highest_spending_category: str, net_savings: floa
 @app.post("/analyze")
 async def analyze_statement(file: UploadFile = File(...)):
     try:
-        if not file.filename.endswith('.csv'):
-            raise HTTPException(status_code=400, detail="Invalid file type.")
+        # 🌟 THE WEB SAFEGUARD: Strip spaces and lowercase the extension check
+        if not file.filename:
+            raise ValueError("No file name detected from the upload stream.")
             
+        filename_lower = file.filename.strip().lower()
+        print(f"📥 Processing incoming file on backend: {file.filename}")
+        
         contents = await file.read()
-        df = pd.read_csv(io.BytesIO(contents))
         
-        # Standardize initial column strings to Title Case to make matching easier
-        df.columns = [col.strip().capitalize() for col in df.columns]
-        
-        # 🌟 THE BANK-AGNOSTIC FIX: Map varying bank headers to Kuber's internal standard
-        column_aliases = {
-            'Description': 'Narration',
-            'Particulars': 'Narration',
-            'Remarks': 'Narration',
-            'Transaction remarks': 'Narration',
-            'Withdrawals': 'Debit',
-            'Withdrawal': 'Debit',
-            'Deposits': 'Credit',
-            'Deposit': 'Credit'
-        }
-        df.rename(columns=column_aliases, inplace=True)
-        
+        # 🌟 MULTI-FORMAT FORK: Process CSV or PDF safely
+        if filename_lower.endswith('.csv'):
+            df = pd.read_csv(io.BytesIO(contents))
+            # Standardize initial column strings to Title Case
+            df.columns = [col.strip().capitalize() for col in df.columns]
+            
+            # Map varying bank headers to Kuber's internal standard
+            column_aliases = {
+                'Description': 'Narration', 'Particulars': 'Narration',
+                'Remarks': 'Narration', 'Transaction remarks': 'Narration',
+                'Withdrawals': 'Debit', 'Withdrawal': 'Debit',
+                'Deposits': 'Credit', 'Deposit': 'Credit'
+            }
+            df.rename(columns=column_aliases, inplace=True)
+            
+        elif filename_lower.endswith('.pdf'):
+            # Route to your new PDF parsing logic
+            df = extract_df_from_pdf(contents)
+            
+        else:
+            # Drop clean structure without triggering unhandled 500 crashes
+            return {
+                "status": "error",
+                "message": f"Unsupported format. Received: '{file.filename.split('.')[-1]}'. Please use CSV or PDF."
+            }
+            
         # 🚨 THE CRITICAL FIX: Instantly convert any empty cells to 0 so Pandas math doesn't break
         df = df.fillna(0)
         
@@ -128,7 +221,6 @@ async def analyze_statement(file: UploadFile = File(...)):
                 return 'Food'
             if any(k in narration for k in ['AMAZON', 'MYNTRA', 'FLIPKART', 'ZUDIO', 'SHOPPING', 'APPARELS']):
                 return 'Shopping'
-            # 🌟 FIX 2: Added DIAGNOSTICS, BLOOD_TEST, and MEDPLUS to capture medical rows
             if any(k in narration for k in ['APOLLO', 'PHARMACY', 'PHARMEASY', 'MEDICINES', 'HOSPITAL', 'CLINIC', '1MG', 'PRACTO', 'DIAGNOSTICS', 'BLOOD_TEST', 'MEDPLUS']):
                 return 'Healthcare'
             if any(k in narration for k in ['NETFLIX', 'SPOTIFY', 'BOOKMYSHOW', 'CONCERT', 'MOVIES', 'CINEMAS', 'MAKEMYTRIP', 'FLIGHT']):
@@ -184,8 +276,14 @@ async def analyze_statement(file: UploadFile = File(...)):
             "ai_recommendation": custom_ai_text
         }
         
+    # 🌟 NEW: Catches explicit validation errors gracefully
+    except ValueError as val_err:
+        print(f"⚠️ Validation Error: {str(val_err)}")
+        return {"status": "error", "message": str(val_err)}
+        
+    # Catches system-level breaks
     except Exception as e:
         import traceback
         print("\n❌ CRITICAL CRASH LOG:")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"status": "error", "message": f"Server processing failed: {str(e)}"}

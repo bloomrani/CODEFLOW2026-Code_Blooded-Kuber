@@ -67,7 +67,7 @@ class _UploadScreenState extends State<UploadScreen> {
   Future<void> _pickAndUploadFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom, 
-      allowedExtensions: ['csv'], // <-- Fixed missing comma
+      allowedExtensions: ['csv','pdf'], // <-- Fixed missing comma
       withData: true,
     );
     
