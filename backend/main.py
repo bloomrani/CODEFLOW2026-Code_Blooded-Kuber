@@ -11,15 +11,10 @@ app = FastAPI(title="CodeFlow AI Double-Model Analyzer")
 classifier = joblib.load('bank_transaction_classifier.pkl')
 recommender_brain = joblib.load('custom_recommender_model.pkl')
 
-def generate_ai_recommendation(highest_spending_category: str, net_savings: float, max_words=15) -> str:
-    """
-    Dual-domain Bigram Markov Chain text generator mapped to Kaggle datasets.
-    Blends ML-generated insights into a clean, human-like layout template.
-    """
+def generate_ai_recommendation(highest_spending_category: str, net_savings: float, max_words=20) -> str:
     chains = recommender_brain.get("chains", {})
     starters = recommender_brain.get("starters", {})
 
-    # Helper function to run the Markov chain for any specific domain
     def generate_sentence(target_domain):
         category_chain = chains.get(target_domain)
         category_starters = starters.get(target_domain)
@@ -34,101 +29,53 @@ def generate_ai_recommendation(highest_spending_category: str, net_savings: floa
             possible_next_words = category_chain.get(current_state, [])
             if not possible_next_words:
                 break
-                
             next_word = random.choice(possible_next_words)
             generated_sentence.append(next_word)
             current_state = (current_state[1], next_word)
 
         raw_text = " ".join(generated_sentence).strip()
-        if not raw_text.endswith('.'):
-            raw_text += '.'
-        return raw_text
+        return raw_text if raw_text.endswith('.') else raw_text + '.'
 
-    # --- 1. Generate Raw Component Advice Streams ---
-    if highest_spending_category in ['Grocery', 'Shopping', 'Food']:
-        spending_domain = "Budgeting"
-    else:
-        spending_domain = "Saving"
-        
-    spending_advice = generate_sentence(spending_domain)
+    # 1. Get advice explicitly for the highest category
+    target_category = str(highest_spending_category).capitalize()
+    spending_advice = generate_sentence(target_category)
     
+    # 2. Get forward-looking advice if they made a profit
     investing_advice = ""
     if net_savings > 0:
         investing_advice = generate_sentence("Investing")
 
-    # --- 2. Clean and Filter Raw Dataset Artifacts ---
-    def clean_text(text):
-        if not text:
-            return ""
-        
-        # 1. Fix encoding anomalies from Kaggle smart quotes
-        text = text.replace('â€™', "'").replace('â€œ', '"').replace('â€', '"').replace('’', "'")
-        
-        # 2. Hard-strip explicit Kaggle phrase tags out completely
-        bad_phrases = [
-            "Budgeting, Goal: Education Fund.", "Budgeting, Goal: Buying a House.",
-            "Budgeting, Goal: Emergency Fund.", "Budgeting, Goal: Retirement Savings.",
-            "Investing, Goal: Education Fund.", "Investing, Goal: Buying a House.",
-            "Investing, Goal: Emergency Fund.", "Investing, Goal: Retirement Savings.",
-            "Saving, Goal: Education Fund.", "Saving, Goal: Buying a House.",
-            "Saving, Goal: Emergency Fund.", "Saving, Goal: Retirement Savings."
-        ]
-        for phrase in bad_phrases:
-            text = text.replace(phrase, "")
-
-        # 3. PRONOUN ADAPTER: Convert first-person tweets into professional second-person advice
-        pronoun_map = {
-            r"\bi'm\b": "you're", r"\bi’m\b": "you're", r"\bi am\b": "you are",
-            r"\bi\b": "you", r"\bme\b": "you", r"\bmy\b": "your", r"\bmyself\b": "yourself"
-        }
-        for pattern, replacement in pronoun_map.items():
-            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
-
-        # 4. FINANCIAL ADVICE GUARDRAILS: Intercepts risky trading lingo for the judges
-        safety_map = {
-            r"\bhigh-risk investments\b": "a structured savings framework",
-            r"\bhigh-risk\b": "conservative",
-            r"\binvesting aggressively\b": "allocating towards high-yield savings or stable funds",
-            r"\baggressively\b": "consistently",
-            r"\brisky decisions\b": "unnecessary exposure"
-        }
-        for pattern, replacement in safety_map.items():
-            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
-            
-        return text.strip()
-
-    clean_spend = clean_text(spending_advice)
-    clean_invest = clean_text(investing_advice)
-
-    # --- 3. The Conversational Compositor Engine ---
-    if clean_spend and clean_invest:
+    # 3. Clean and Compose the Final Insight (Empathetic Engine)
+    if target_category == "Healthcare":
+        if net_savings <= 0:
+            final_payload = (
+                f"Sudden medical and health priorities created an exceptional deficit of ₹{abs(net_savings):,.2f} this month. "
+                f"Recovery Insight: {spending_advice} "
+                f"Prioritizing your physical recovery takes precedence, while building back an emergency cash buffer can stabilize your upcoming cycles."
+            )
+        else:
+            final_payload = (
+                f"Your statement reflects significant medical outlays this cycle. "
+                f"Recommendation: {spending_advice} "
+                f"Since you still maintained a net surplus of ₹{net_savings:,.2f}, your baseline financial framework remains highly resilient."
+            )
+    elif spending_advice and investing_advice:
         final_payload = (
-            f"Based on your statement, your highest spending volume concentrated in your {highest_spending_category} sector. "
-            f"To manage this pattern, remember that {clean_spend.lower()} On the other hand, since you maintained a solid surplus "
-            f"of ₹{net_savings:,.0f} this month, it's a great opportunity to look forward: {clean_invest.lower()}"
+            f"Your primary expenditure this cycle was concentrated in {target_category}. "
+            f"Strategy: {spending_advice} "
+            f"Since you secured a net surplus of ₹{net_savings:,.2f}, consider your next move: {investing_advice}"
         )
-    elif clean_spend and net_savings <= 0:
+    elif spending_advice and net_savings <= 0:
         final_payload = (
-            f"Your financial statement shows heavy activity in the {highest_spending_category} sector, resulting in a deficit this month. "
-            f"Focus on structured adjustments: {clean_spend.lower()} Reducing non-essential expenses will help secure your capital stability."
+            f"Heavy activity in {target_category} led to a financial deficit this cycle. "
+            f"Correction Strategy: {spending_advice} "
+            f"Reducing outlays here is critical to restoring your capital baseline."
         )
     else:
-        final_payload = (
-            f"Your financial statement shows high activity in {highest_spending_category}. "
-            f"Track your spending closely to optimize your budget and increase your net savings."
-        )
+        final_payload = f"Track your {target_category} spending closely to optimize your net savings."
 
-    # Clean up double punctuation points, capitalization, or awkward spacing errors
-    final_payload = final_payload.replace('..', '.').replace(' .', '.').replace('  ', ' ')
-    
-    # Capitalize the first letter of sentences cleanly
-    sentences = final_payload.split('. ')
-    capitalized_sentences = [s.strip().capitalize() for s in sentences if s.strip()]
-    final_payload = ". ".join(capitalized_sentences)
-    if final_payload and not final_payload.endswith('.'):
-        final_payload += '.'
-    final_payload = clean_text(final_payload) 
-    return final_payload
+    # Clean up any weird spacing
+    return final_payload.replace('  ', ' ').strip()
 
 
 @app.post("/analyze")
@@ -146,20 +93,29 @@ async def analyze_statement(file: UploadFile = File(...)):
         
         # Model 1: Predict transaction categories
         df['Predicted_Category'] = classifier.predict(df['Narration'])
+        
         def keyword_override(row):
+            # 🌟 FIX 1: If it's an incoming credit (like Salary), instantly categorize it as Income!
+            if float(row.get('Credit', 0)) > 0:
+                return 'Income'
+                
             narration = str(row['Narration']).upper()
+            
             if any(k in narration for k in ['ZOMATO', 'SWIGGY', 'RESTAURANT', 'DINNER', 'FOOD']):
                 return 'Food'
             if any(k in narration for k in ['AMAZON', 'MYNTRA', 'FLIPKART', 'ZUDIO', 'SHOPPING', 'APPARELS']):
                 return 'Shopping'
-            if any(k in narration for k in ['APOLLO', 'PHARMACY', 'PHARMEASY', 'MEDICINES', 'HOSPITAL', 'CLINIC', '1MG', 'PRACTO']):
+            # 🌟 FIX 2: Added DIAGNOSTICS, BLOOD_TEST, and MEDPLUS to capture medical rows
+            if any(k in narration for k in ['APOLLO', 'PHARMACY', 'PHARMEASY', 'MEDICINES', 'HOSPITAL', 'CLINIC', '1MG', 'PRACTO', 'DIAGNOSTICS', 'BLOOD_TEST', 'MEDPLUS']):
                 return 'Healthcare'
             if any(k in narration for k in ['NETFLIX', 'SPOTIFY', 'BOOKMYSHOW', 'CONCERT', 'MOVIES', 'CINEMAS', 'MAKEMYTRIP', 'FLIGHT']):
                 return 'Entertainment'
             if any(k in narration for k in ['BESCOM', 'ELECTRICITY', 'FIBER', 'JIO', 'AIRTEL', 'GAS', 'INDANE', 'WATER', 'RENT', 'MAINTENANCE']):
                 return 'Utilities'
+                
             # If no obvious keywords match, trust the trained machine learning model
             return row['Predicted_Category']
+            
         df['Predicted_Category'] = df.apply(keyword_override, axis=1)
         
         # Financial math for metrics
