@@ -1,14 +1,17 @@
 import 'dart:io';
-import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:convert';
+
 import '../../providers/theme_provider.dart'; 
 import '../../core/utils/api_service.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../loading/settings_screen.dart'; 
+import '../../core/utils/scan_vault.dart';
 
 // --- THE PERMANENT VAULT ---
 class ScanVault {
@@ -60,7 +63,12 @@ class _UploadScreenState extends State<UploadScreen> {
     super.initState();
     _initVault();
   }
-
+  
+  Future<void> _loadVault() async {
+    await ScanVault.loadScans();
+    if (mounted) setState(() {}); 
+  }
+  
   Future<void> _initVault() async {
     await ScanVault.loadScans();
     if (mounted) setState(() {}); 
@@ -113,13 +121,12 @@ class _UploadScreenState extends State<UploadScreen> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final bool isDark = themeProvider.isDarkMode;
     
-    // --- THEME COLORS ---
     final Color premiumGold = const Color(0xFFFFD700); 
-    final Color deepGold = const Color(0xFFD4AF37); // Softer, readable gold
+    final Color deepGold = const Color(0xFFD4AF37);
     final Color richLavender = const Color(0xFF7E22CE); 
     
     final Color themeAccent = isDark ? premiumGold : richLavender;
-    final Color buttonTextColor = isDark ? deepGold : richLavender; // Deepened gold for dark mode
+    final Color buttonTextColor = isDark ? deepGold : richLavender; 
     
     final Color cardColor = isDark ? const Color(0xFF1A3A45) : Colors.white;
     final Color textColor = isDark ? Colors.white : const Color(0xFF1E1C24);
@@ -133,10 +140,20 @@ class _UploadScreenState extends State<UploadScreen> {
         elevation: 0,
         title: Text("KUBER AI", style: TextStyle(color: textColor, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings_rounded, color: themeAccent),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+          ),
+          IconButton(
+            icon: Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded, color: themeAccent),
+            onPressed: () => themeProvider.toggleTheme(!isDark),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Stack(
         children: [
-          // Gradient Background
           AnimatedContainer(
             duration: const Duration(milliseconds: 600),
             decoration: BoxDecoration(
@@ -146,7 +163,6 @@ class _UploadScreenState extends State<UploadScreen> {
             ),
           ),
           
-          // The Doodle Layer
           Positioned.fill(
             child: CustomPaint(
               painter: DoodleBackgroundPainter(color: themeAccent.withOpacity(0.12)),
@@ -195,12 +211,12 @@ class _UploadScreenState extends State<UploadScreen> {
                         ),
                       ),
                       
-                      const SizedBox(height: 50),
+                      const SizedBox(height: 40),
 
                       if (displayScans.isNotEmpty) ...[
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: Text("Previous Scans", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor)),
+                          child: Text("Previous Analysis Scans", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor)),
                         ),
                         const SizedBox(height: 16),
                         ListView.builder(
@@ -226,14 +242,14 @@ class _UploadScreenState extends State<UploadScreen> {
                                   },
                                 ),
                                 onTap: () {
-                                  Navigator.of(context).pushReplacement(
+                                  Navigator.of(context).push(
                                     MaterialPageRoute(builder: (context) => DashboardScreen(analysisData: scan)),
                                   );
                                 },
                               ),
                             );
                           },
-                        )
+                        ),
                       ]
                     ],
                   ),
@@ -246,7 +262,6 @@ class _UploadScreenState extends State<UploadScreen> {
     );
   }
 
-  // --- BUTTON BUILDER ---
   Widget _buildStyledButton(String text, IconData icon, VoidCallback onPressed, Color textColor, Color iconColor) {
     return SizedBox(
       width: double.infinity,
@@ -266,7 +281,6 @@ class _UploadScreenState extends State<UploadScreen> {
   }
 }
 
-// --- DOODLE BACKGROUND PAINTER ---
 class DoodleBackgroundPainter extends CustomPainter {
   final Color color;
   DoodleBackgroundPainter({required this.color});
