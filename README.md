@@ -35,21 +35,21 @@ By simplifying complex banking data, KUBER empowers users to manage money more c
 
 ---
 # 🎡 FROM PDF & CSV FILE TO INSIGHTS IN FOUR STEPS
-Here's your workflow diagram. Each step flows cleanly into the next -->
 ```mermaid
-flowchart TD
-    A["**01**<br/>**Upload Statement**<br/><sub>User uploads a single Indian bank statement as PDF or CSV file through a simple, clean interface.</sub>"]
-    B["**02**<br/>**Extract & Parse**<br/><sub>AI reads the document, identifies all transactions, dates, amounts, and merchant names.</sub>"]
-    C["**03**<br/>**Categorize & Analyze**<br/><sub>Every transaction is tagged and grouped. Patterns, trends, and anomalies are detected.</sub>"]
-    D["**04**<br/>**Generate Insights**<br/><sub>A rich summary and actionable insights are surfaced, helping users understand their finances.</sub>"]
+flowchart LR
+    A["**01. Ingestion**<br>Upload CSV/PDF via<br>Flutter interface."]
+    B["**02. Parsing**<br>FastAPI extracts text<br>& builds data rows."]
+    C["**03. Categorization**<br>ML + Keyword Overrides<br>tag transactions."]
+    D["**04. AI Insights**<br>Markov Chain engine<br>generates strategies."]
+    E["**05. Dashboard**<br>Explore metrics &<br>export PDF reports."]
 
-    A --> B --> C --> D
+    A --> B --> C --> D --> E
 
-    style A fill:#E6F1FB,stroke:#378ADD,color:#0C447C
-    style B fill:#E1F5EE,stroke:#1D9E75,color:#085041
-    style C fill:#EEEDFE,stroke:#7F77DD,color:#3C3489
-    style D fill:#FAEEDA,stroke:#BA7517,color:#633806
-
+    style A fill:#E6F1FB,stroke:#378ADD,color:#0C447C,stroke-width:2px
+    style B fill:#E1F5EE,stroke:#1D9E75,color:#085041,stroke-width:2px
+    style C fill:#EEEDFE,stroke:#7F77DD,color:#3C3489,stroke-width:2px
+    style D fill:#FAEEDA,stroke:#BA7517,color:#633806,stroke-width:2px
+    style E fill:#FCE8EC,stroke:#D6336C,color:#A61E4D,stroke-width:2px
 ```
 
 # 🛠️ Technologies Used
