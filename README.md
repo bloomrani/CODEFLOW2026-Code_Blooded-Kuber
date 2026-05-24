@@ -34,6 +34,19 @@ By simplifying complex banking data, KUBER empowers users to manage money more c
 * ⚡ Simple and User-Friendly Experience
 
 ---
+# 🧠 AI Architecture & Live Hosting
+
+Our intelligence engine is entirely custom-built to ensure maximum privacy and accuracy without relying on expensive, generic LLM APIs for core categorization. We utilize:
+* **Naive Bayes Classifier:** For high-accuracy expense and income categorization based on transaction narrations.
+* **Markov Chain Models:** For predictive financial state transitions and generating actionable spending strategies.
+
+**⚠️ Live Deployment & Infrastructure Note:**
+Running custom statistical probability matrices requires significant RAM to hold the models in active memory. Standard free-tier cloud environments (like Render or Heroku) impose strict 512MB memory ceilings, which can cause Out-Of-Memory (OOM) crashes during heavy AI processing. 
+
+To guarantee zero latency, prevent cold-start delays, and ensure the judges experience the app flawlessly during the review period, **our FastAPI backend is currently hosted on a dedicated local machine and securely tunneled to the public internet using ngrok.** This allows the Flutter frontend to communicate seamlessly with our heavy ML models in real-time.
+
+---
+---
 # 🎡 FROM PDF & CSV FILE TO INSIGHTS IN FIVE STEPS
 ```mermaid
 flowchart LR
@@ -55,11 +68,9 @@ flowchart LR
 ---
 # 🛠️ Technologies Used
 
-* **Frontend:** HTML, CSS, JavaScript
-* **Backend:**  Python 
-* **AI/ML:**   NAIVE BAYES MODEL & MARKOV CHAIN MODEL*(customize as needed)*
-* **Database:** Firestore[ / MySQL *(optional)*]
-
+* **Frontend:** Flutter (Web & Android SPA)
+* **Backend:**  Python(Fast API) 
+* **AI/ML:**   Custom Naive Bayes & Markov Chain Models
 ---
 
 # 🚀 How It Works
