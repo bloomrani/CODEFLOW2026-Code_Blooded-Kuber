@@ -202,31 +202,17 @@ class DashboardScreen extends StatelessWidget {
                 ),
 
                 // TAB 2: AI INSIGHTS
+                // TAB 2: AI INSIGHTS
                 SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [Text("Kuber's Analysis", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
-      const SizedBox(height: 16),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 600),
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: glassCardColor,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: themeAccent.withOpacity(0.3), width: 1.5), 
-                          boxShadow: [BoxShadow(color: themeAccent.withOpacity(0.05), blurRadius: 20, spreadRadius: 2)]
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(Icons.auto_awesome_rounded, color: themeAccent, size: 36), 
-                            const SizedBox(height: 16),
-                            Text(aiCommentary, style: TextStyle(color: textColor, fontSize: 16, height: 1.7, fontStyle: FontStyle.italic)),
-                          ],
-                        ),
-                      ),
+                    children: [
+                      Text("Kuber's Analysis", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+                      const SizedBox(height: 16),
+                      
+                      // 🌟 THE FIX: Call the new rich UI component here!
+                      _buildAiInsightCard(aiCommentary, glassCardColor, themeAccent, textColor, subTextColor, baseAccent),
                     ],
                   ),
                 ),
@@ -339,6 +325,153 @@ class DashboardScreen extends StatelessWidget {
       width: double.infinity, height: double.infinity,
       child: CustomPaint(
         painter: LineArtPainter(color: doodleColor.withOpacity(0.08)), 
+      ),
+    );
+  }
+  // --- AI INSIGHT TERMINAL UI ---
+  Widget _buildAiInsightCard(String rawAiText, Color cardColor, Color themeAccent, Color textColor, Color subTextColor, Color baseAccent) {
+    
+    // 🔍 1. Set smart defaults. If we can't split the text, just show the RAW text!
+    String primaryFocus = "Overall Expenses";
+    String strategyText = rawAiText; 
+    String nextMoveText = "Continue tracking your habits to unlock advanced wealth strategies.";
+
+    // 🔍 2. Try to extract the Primary Focus
+    if (rawAiText.contains("concentrated in ")) {
+      primaryFocus = rawAiText.split("concentrated in ").last.split('.').first;
+    } else if (rawAiText.contains("Track your ")) {
+      primaryFocus = rawAiText.split("Track your ").last.split(" spending").first;
+    }
+
+    // 🔍 3. Try to extract the Strategy block
+    if (rawAiText.contains("Strategy: ")) {
+      strategyText = rawAiText.split("Strategy: ").last.split(" Since").first.replaceAll("Correction Strategy: ", "");
+    } else if (rawAiText.contains("Recovery Insight: ")) {
+      strategyText = rawAiText.split("Recovery Insight: ").last.split(" Prioritizing").first;
+    }
+
+    // 🔍 4. Try to extract the Next Move block
+    if (rawAiText.contains("consider your next move: ")) {
+      nextMoveText = rawAiText.split("consider your next move: ").last;
+    } else if (rawAiText.contains("Reducing outlays here is critical")) {
+      nextMoveText = "Reducing outlays in this sector is critical to restoring your capital baseline.";
+    } else if (rawAiText.contains("building back an emergency cash buffer")) {
+      nextMoveText = "Prioritize your recovery while building back an emergency cash buffer.";
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 600),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: themeAccent.withOpacity(0.3), width: 1.5),
+        boxShadow: [BoxShadow(color: themeAccent.withOpacity(0.05), blurRadius: 20, spreadRadius: 2)]
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Header Row with Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: themeAccent, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    "KUBER'S FINANCIAL INTELLIGENCE",
+                    style: TextStyle(
+                      color: themeAccent,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.green.withOpacity(0.5)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.trending_up, color: Colors.green, size: 14),
+                    SizedBox(width: 4),
+                    Text("Verified", style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // 2. Main Metric Target
+          Text(
+            "Primary Target: $primaryFocus",
+            style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          LinearProgressIndicator(
+            value: 0.72,
+            backgroundColor: subTextColor.withOpacity(0.2),
+            valueColor: AlwaysStoppedAnimation<Color>(themeAccent),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 20),
+
+          // 3. Strategy Column Block
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.lightbulb_outline, color: themeAccent, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Optimization Strategy", style: TextStyle(color: subTextColor, fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(
+                      strategyText,
+                      style: TextStyle(color: textColor, fontSize: 14, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Divider(color: themeAccent.withOpacity(0.15), thickness: 1),
+          ),
+
+          // 4. Wealth Generation Block
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.rocket_launch_outlined, color: baseAccent, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Next Wealth Move", style: TextStyle(color: baseAccent, fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(
+                      nextMoveText,
+                      style: TextStyle(color: textColor, fontSize: 14, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
