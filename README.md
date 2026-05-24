@@ -34,7 +34,7 @@ By simplifying complex banking data, KUBER empowers users to manage money more c
 * ⚡ Simple and User-Friendly Experience
 
 ---
-# 🎡 FROM PDF & CSV FILE TO INSIGHTS IN FOUR STEPS
+# 🎡 FROM PDF & CSV FILE TO INSIGHTS IN FIVE STEPS
 ```mermaid
 flowchart LR
     A["**01. Ingestion**<br>Upload CSV/PDF via<br>Flutter interface."]
