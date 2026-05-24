@@ -91,6 +91,9 @@ This project is still under license process.
 # 👨‍💻 Developed By
 
 **Rani Bhattarcharjee**
+
 **Ritankar Bose**
+
 **Abhirup Ghosh**
+
 B.Tech CSE Students | 2nd YEAR 
