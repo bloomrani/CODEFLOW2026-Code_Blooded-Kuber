@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../providers/theme_provider.dart'; 
 import '../../core/utils/api_service.dart';
 import '../dashboard/dashboard_screen.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 // --- THE PERMANENT VAULT ---
 class ScanVault {
@@ -24,12 +24,14 @@ class ScanVault {
   }
 
   static Future<void> saveScan(Map<String, dynamic> newScan) async {
-    bool exists = savedScans.any((scan) => scan['scan_date'] == newScan['scan_date']);
-    if (!exists) {
+    final int index = savedScans.indexWhere((scan) => scan['scan_date'] == newScan['scan_date']);
+    if (index != -1) {
+      savedScans[index] = newScan;
+    } else {
       newScan['scan_date'] ??= DateTime.now().toString().substring(0, 16);
       savedScans.add(newScan);
-      await _persist();
     }
+    await _persist();
   }
 
   static Future<void> deleteScan(String dateId) async {
@@ -64,10 +66,10 @@ class _UploadScreenState extends State<UploadScreen> {
     if (mounted) setState(() {}); 
   }
 
-  Future<void> _pickAndUploadFile() async {
+  Future<void> _pickAndUploadFile(String fileExtension) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom, 
-      allowedExtensions: ['csv'], // <-- Fixed missing comma
+      allowedExtensions: [fileExtension],
       withData: true,
     );
     
@@ -78,22 +80,17 @@ class _UploadScreenState extends State<UploadScreen> {
     try {
       Map<String, dynamic>? data;
 
-      // 🌟 THE CRITICAL FIX: Branch logic based on the platform!
       if (kIsWeb) {
-        // 🌐 WEB: Use the raw byte stream because paths are blocked
         final bytes = result.files.single.bytes!;
         final fileName = result.files.single.name;
         data = await ApiService.analyzeStatementWithAIWeb(bytes, fileName);
       } else {
-        // 📱 MOBILE: Use the standard file path
         File file = File(result.files.single.path!);
         data = await ApiService.analyzeStatementWithAI(file);
       }
       
       if (mounted && data != null) {
         data['scan_date'] = DateTime.now().toString().substring(0, 16);
-        await ScanVault.saveScan(data); 
-        
         if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => DashboardScreen(analysisData: data!)),
@@ -116,20 +113,20 @@ class _UploadScreenState extends State<UploadScreen> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final bool isDark = themeProvider.isDarkMode;
     
-    // --- CUSTOM COLOR PALETTE ---
-    final Color bgColor = isDark ? const Color(0xFF122C34) : const Color(0xFFF5F3F9); 
+    // --- THEME COLORS ---
+    final Color premiumGold = const Color(0xFFFFD700); 
+    final Color deepGold = const Color(0xFFD4AF37); // Softer, readable gold
+    final Color richLavender = const Color(0xFF7E22CE); 
+    
+    final Color themeAccent = isDark ? premiumGold : richLavender;
+    final Color buttonTextColor = isDark ? deepGold : richLavender; // Deepened gold for dark mode
+    
     final Color cardColor = isDark ? const Color(0xFF1A3A45) : Colors.white;
     final Color textColor = isDark ? Colors.white : const Color(0xFF1E1C24);
-    final Color accentColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF6366F1);
     
-    final Color doodleColor = isDark 
-        ? const Color(0xFFFFD54F).withOpacity(0.12) // Yellow Doodles
-        : const Color(0xFF9575CD).withOpacity(0.15); // Lavender Doodles
-
     final displayScans = ScanVault.savedScans.reversed.toList();
 
     return Scaffold(
-      backgroundColor: bgColor,
       extendBodyBehindAppBar: true, 
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -139,14 +136,23 @@ class _UploadScreenState extends State<UploadScreen> {
       ),
       body: Stack(
         children: [
-          // 1. The Doodly Background Layer
-          Positioned.fill(
-            child: CustomPaint(
-              painter: DoodleBackgroundPainter(color: doodleColor),
+          // Gradient Background
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 600),
+            decoration: BoxDecoration(
+              gradient: isDark 
+                  ? const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF125C7A), Color(0xFF030D14)], stops: [0.0, 0.85])
+                  : const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFFFFFFF), Color(0xFFE9D5FF)], stops: [0.1, 1.0]),
             ),
           ),
           
-          // 2. The Main Content Layer
+          // The Doodle Layer
+          Positioned.fill(
+            child: CustomPaint(
+              painter: DoodleBackgroundPainter(color: themeAccent.withOpacity(0.12)),
+            ),
+          ),
+          
           SafeArea(
             child: Center( 
               child: ConstrainedBox( 
@@ -154,58 +160,36 @@ class _UploadScreenState extends State<UploadScreen> {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 20),
-                      
-                      // Stylized Upload Card
                       Container(
                         padding: const EdgeInsets.all(32),
                         decoration: BoxDecoration(
                           color: cardColor.withOpacity(0.8), 
                           borderRadius: BorderRadius.circular(32),
-                          border: Border.all(color: accentColor.withOpacity(0.3), width: 2), 
-                          boxShadow: [
-                            BoxShadow(
-                              color: accentColor.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            )
-                          ],
+                          border: Border.all(color: themeAccent.withOpacity(0.3), width: 2), 
                         ),
                         child: Column(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: accentColor.withOpacity(0.1),
-                              ),
-                              child: Icon(Icons.cloud_upload_rounded, size: 70, color: accentColor),
+                              decoration: BoxDecoration(shape: BoxShape.circle, color: themeAccent.withOpacity(0.1)),
+                              child: Icon(Icons.cloud_upload_rounded, size: 70, color: themeAccent),
                             ),
                             const SizedBox(height: 24),
                             Text("Upload Statement", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: textColor)),
                             const SizedBox(height: 12),
-                            Text(
-                              "Drop your bank CSV here to let Kuber map out your spending universe.", 
-                              textAlign: TextAlign.center, 
-                              style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 15, height: 1.4),
-                            ),
+                            Text("Drop your bank CSV or PDF here to let Kuber map out your spending universe.", textAlign: TextAlign.center, style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 15)),
                             const SizedBox(height: 32),
                             
                             _isLoading 
-                              ? CircularProgressIndicator(color: accentColor)
-                              : ElevatedButton.icon(
-                                  onPressed: _pickAndUploadFile,
-                                  icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white), 
-                                  label: const Text("Select CSV File", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: accentColor,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                  ),
+                              ? CircularProgressIndicator(color: themeAccent)
+                              : Column(
+                                  children: [
+                                    _buildStyledButton("Select CSV File", Icons.table_chart_rounded, () => _pickAndUploadFile('csv'), buttonTextColor, themeAccent),
+                                    const SizedBox(height: 12),
+                                    _buildStyledButton("Select PDF File", Icons.picture_as_pdf_rounded, () => _pickAndUploadFile('pdf'), buttonTextColor, themeAccent),
+                                  ],
                                 ),
                           ],
                         ),
@@ -230,23 +214,10 @@ class _UploadScreenState extends State<UploadScreen> {
                             return Card(
                               color: cardColor,
                               margin: const EdgeInsets.only(bottom: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                side: BorderSide(color: textColor.withOpacity(0.05)), 
-                              ),
-                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                               child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                leading: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: accentColor.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(Icons.insert_chart_rounded, color: accentColor),
-                                ),
-                                title: Text("Statement Analysis", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-                                subtitle: Text(date, style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 12)),
+                                title: Text(scan['scan_name'] ?? "Statement Analysis", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                                subtitle: Text(date, style: TextStyle(color: textColor.withOpacity(0.5))),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
                                   onPressed: () async {
@@ -274,52 +245,52 @@ class _UploadScreenState extends State<UploadScreen> {
       ),
     );
   }
+
+  // --- BUTTON BUILDER ---
+  Widget _buildStyledButton(String text, IconData icon, VoidCallback onPressed, Color textColor, Color iconColor) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, color: iconColor), 
+        label: Text(text, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    );
+  }
 }
 
-// --- THE DOODLE PAINTER ---
+// --- DOODLE BACKGROUND PAINTER ---
 class DoodleBackgroundPainter extends CustomPainter {
   final Color color;
   DoodleBackgroundPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
+    final paint = Paint()..color = color..strokeWidth = 2.0..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
     final random = Random(42); 
 
-    // Pluses
     for (int i = 0; i < 20; i++) {
-      double x = random.nextDouble() * size.width;
-      double y = random.nextDouble() * size.height;
+      double x = random.nextDouble() * size.width; double y = random.nextDouble() * size.height;
       double s = random.nextDouble() * 10 + 5; 
-      
       canvas.drawLine(Offset(x - s, y), Offset(x + s, y), paint);
       canvas.drawLine(Offset(x, y - s), Offset(x, y + s), paint);
     }
-
-    // Circles
-    for (int i = 0; i < 15; i++) {
-      double x = random.nextDouble() * size.width;
-      double y = random.nextDouble() * size.height;
-      double r = random.nextDouble() * 15 + 5; 
-      canvas.drawCircle(Offset(x, y), r, paint);
+    for (int i = 15; i < 30; i++) {
+      double x = random.nextDouble() * size.width; double y = random.nextDouble() * size.height;
+      canvas.drawCircle(Offset(x, y), random.nextDouble() * 15 + 5, paint);
     }
-
-    // Squiggly lines
     for (int i = 0; i < 8; i++) {
       double startX = random.nextDouble() * size.width;
       double startY = random.nextDouble() * size.height;
-      
-      Path path = Path();
-      path.moveTo(startX, startY);
-      
-      double currentX = startX;
-      double currentY = startY;
-      
+      Path path = Path()..moveTo(startX, startY);
+      double currentX = startX; double currentY = startY;
       for(int j = 0; j < 3; j++) {
         currentX += random.nextDouble() * 40 + 20;
         currentY += (random.nextBool() ? 1 : -1) * (random.nextDouble() * 30 + 10);
@@ -328,7 +299,6 @@ class DoodleBackgroundPainter extends CustomPainter {
       canvas.drawPath(path, paint);
     }
   }
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
