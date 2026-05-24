@@ -4,8 +4,15 @@ import pandas as pd
 import joblib
 import io
 import random
-
+from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title="CodeFlow AI Double-Model Analyzer")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows any origin (including localhost)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows POST, GET, etc.
+    allow_headers=["*"],  # Allows your custom ngrok headers
+)
 
 # --- Load BOTH of your custom-trained offline AI models ---
 classifier = joblib.load('bank_transaction_classifier.pkl')

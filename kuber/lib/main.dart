@@ -3,8 +3,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// 🌟 REQUIRED: This contains all your web and mobile API keys
+import 'firebase_options.dart'; 
+
 // 👇 CRITICAL: Make sure this path exactly matches where the file you just opened is!
-// If it's inside a 'theme' folder, it should be: import 'theme/theme_provider.dart';
 import 'providers/theme_provider.dart'; 
 
 import 'features/splash_screen.dart'; // Adjust this path if needed
@@ -12,9 +14,13 @@ import 'features/splash_screen.dart'; // Adjust this path if needed
 void main() async {
   // 1. Lock the framework
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. Turn on Firebase (Platform Compliant!)
+  // 🚀 THE FIX: This safely routes your Web keys to Chrome, and your Mobile keys to your Alienware emulator.
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  ); 
   
-  // 2. Turn on Firebase
-  await Firebase.initializeApp(); 
   await FirebaseAuth.instance.signOut();
 
   // 3. Run the app
